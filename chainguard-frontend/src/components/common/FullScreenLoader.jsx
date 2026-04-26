@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Link2 } from 'lucide-react'
 import { checkApiHealth, checkMlHealth } from '../../services/api'
@@ -40,8 +40,14 @@ export default function FullScreenLoader({ onReady }) {
   const [progress, setProgress] = useState(0)
   const [failed, setFailed] = useState(false)
   const [countdown, setCountdown] = useState(3)
+  const onReadyRef = useRef(onReady)
 
-  const handleReady = useCallback(() => { if (onReady) onReady() }, [onReady])
+  // Keep ref fresh without causing effect re-runs
+  useEffect(() => { onReadyRef.current = onReady }, [onReady])
+
+  const fireReady = useCallback(() => {
+    if (onReadyRef.current) onReadyRef.current()
+  }, [])
 
   useEffect(() => {
     const msgTimer = setInterval(() => setMsgIdx(i => (i + 1) % MESSAGES.length), 2200)
@@ -51,25 +57,29 @@ export default function FullScreenLoader({ onReady }) {
       clearInterval(msgTimer)
       clearInterval(progTimer)
       setFailed(true)
-    }, 15000)
+    }, 45000)
 
-    Promise.allSettled([checkApiHealth(), checkMlHealth()]).then(() => {
+    // Use allSettled so we proceed regardless of errors
+    Promise.allSettled([
+      checkApiHealth().catch(() => null),
+      checkMlHealth().catch(() => null),
+    ]).then(() => {
       clearTimeout(timeout)
       clearInterval(msgTimer)
       clearInterval(progTimer)
       setProgress(100)
-      setTimeout(handleReady, 600)
+      setTimeout(fireReady, 600)
     })
 
     return () => { clearInterval(msgTimer); clearInterval(progTimer); clearTimeout(timeout) }
-  }, [handleReady])
+  }, [fireReady])
 
   useEffect(() => {
     if (!failed) return
-    if (countdown <= 0) { handleReady(); return }
+    if (countdown <= 0) { fireReady(); return }
     const t = setTimeout(() => setCountdown(c => c - 1), 1000)
     return () => clearTimeout(t)
-  }, [failed, countdown, handleReady])
+  }, [failed, countdown, fireReady])
 
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center gap-6"

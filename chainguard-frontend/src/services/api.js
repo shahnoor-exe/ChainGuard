@@ -3,10 +3,10 @@ import { API_BASE, ML_BASE } from '../config'
 import { supabase } from './supabaseClient'
 
 // ── Main API (Node.js backend) ────────────────────────────
-const api = axios.create({ baseURL: API_BASE, timeout: 10000 })
+const api = axios.create({ baseURL: API_BASE, timeout: 30000 })
 
 // ── ML Engine API ─────────────────────────────────────────
-const mlApi = axios.create({ baseURL: ML_BASE, timeout: 15000 })
+const mlApi = axios.create({ baseURL: ML_BASE, timeout: 30000 })
 
 // ── Auth token interceptor ────────────────────────────────
 api.interceptors.request.use(async (config) => {

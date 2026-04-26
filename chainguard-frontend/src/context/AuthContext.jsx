@@ -9,19 +9,33 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
   const [authError, setAuthError] = useState(null)
 
+  // Map demo emails to their roles for reliable fallback
+  const DEMO_EMAIL_ROLES = {
+    'admin@chainguard.demo':     { role: 'super_admin',        full_name: 'Arjun Kumar',  avatar_initials: 'AK' },
+    'manager@chainguard.demo':   { role: 'logistics_manager',  full_name: 'Priya Sharma', avatar_initials: 'PS' },
+    'warehouse@chainguard.demo': { role: 'warehouse_operator', full_name: 'Rohit Patel',  avatar_initials: 'RP', warehouse_city: 'Mumbai' },
+    'driver@chainguard.demo':    { role: 'driver',             full_name: 'Suresh Kumar', avatar_initials: 'SK' },
+    'analyst@chainguard.demo':   { role: 'analyst',            full_name: 'Meera Iyer',   avatar_initials: 'MI' },
+    'ceo@chainguard.demo':       { role: 'executive',          full_name: 'Vivek Mehta',  avatar_initials: 'VM' },
+  }
+
   const fetchProfile = useCallback(async (userId) => {
-    try {
-      const { data, error } = await supabase
-        .from('user_profiles')
-        .select('*')
-        .eq('id', userId)
-        .single()
-      if (error) throw error
-      return data
-    } catch (err) {
-      console.warn('[Auth] Could not fetch profile:', err.message)
-      return null
+    // Try up to 2 times in case of transient errors
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('id', userId)
+          .single()
+        if (error) throw error
+        if (data) return data
+      } catch (err) {
+        console.warn(`[Auth] Profile fetch attempt ${attempt + 1} failed:`, err.message)
+        if (attempt === 0) await new Promise(r => setTimeout(r, 500))
+      }
     }
+    return null
   }, [])
 
   const setUserFromSession = useCallback(async (sess) => {
@@ -32,7 +46,9 @@ export function AuthProvider({ children }) {
     }
     setSession(sess)
     const profile = await fetchProfile(sess.user.id)
+    
     if (profile) {
+      console.log(`[Auth] Profile loaded: ${profile.email} → role: ${profile.role}`)
       setUser({
         id: sess.user.id,
         email: sess.user.email,
@@ -44,17 +60,34 @@ export function AuthProvider({ children }) {
         company_name: profile.company_name || 'ChainGuard Demo Co.',
       })
     } else {
-      // Fallback: basic user without profile
-      setUser({
-        id: sess.user.id,
-        email: sess.user.email,
-        full_name: sess.user.email.split('@')[0],
-        role: 'logistics_manager',
-        warehouse_city: null,
-        assigned_shipment_id: null,
-        avatar_initials: sess.user.email.slice(0, 2).toUpperCase(),
-        company_name: 'ChainGuard Demo Co.',
-      })
+      // Fallback: check if this is a known demo email
+      const demoInfo = DEMO_EMAIL_ROLES[sess.user.email]
+      if (demoInfo) {
+        console.warn(`[Auth] Profile not found, using demo fallback for: ${sess.user.email} → role: ${demoInfo.role}`)
+        setUser({
+          id: sess.user.id,
+          email: sess.user.email,
+          full_name: demoInfo.full_name,
+          role: demoInfo.role,
+          warehouse_city: demoInfo.warehouse_city || null,
+          assigned_shipment_id: null,
+          avatar_initials: demoInfo.avatar_initials,
+          company_name: 'ChainGuard Demo Co.',
+        })
+      } else {
+        // Unknown user without profile — default to read-only analyst
+        console.warn(`[Auth] Unknown user without profile: ${sess.user.email} → defaulting to analyst`)
+        setUser({
+          id: sess.user.id,
+          email: sess.user.email,
+          full_name: sess.user.email.split('@')[0],
+          role: 'analyst',
+          warehouse_city: null,
+          assigned_shipment_id: null,
+          avatar_initials: sess.user.email.slice(0, 2).toUpperCase(),
+          company_name: 'ChainGuard Demo Co.',
+        })
+      }
     }
   }, [fetchProfile])
 

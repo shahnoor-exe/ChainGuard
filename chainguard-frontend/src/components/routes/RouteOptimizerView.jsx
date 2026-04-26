@@ -106,6 +106,24 @@ export default function RouteOptimizerView({ initialOrigin, initialDest }) {
   const [error, setError]           = useState(null)
   const [selectedOption, setSelected] = useState(null)
 
+  // Normalize backend route format to frontend options format
+  function normalizeRoutes(rawRoutes, prio) {
+    return (rawRoutes || []).map((r, i) => ({
+      priority: prio,
+      path: r.path || [],
+      highways: r.nh_used || r.highways || [],
+      total_duration_hrs: r.estimated_duration_hrs ?? r.total_duration_hrs ?? 0,
+      total_cost: r.estimated_cost_inr ?? r.total_cost ?? 0,
+      total_carbon_kg: r.carbon_kg ?? r.total_carbon_kg ?? 0,
+      scores: {
+        speed: r.speed_score ?? r.scores?.speed ?? 0,
+        cost: r.cost_score ?? r.scores?.cost ?? 0,
+        carbon: r.carbon_score ?? r.scores?.carbon ?? 0,
+      },
+      recommended: r.recommended ?? i === 0,
+    }))
+  }
+
   async function handleOptimize() {
     if (!origin || !destination) return addToast('Please select both cities', 'warning')
     if (origin === destination) return addToast('Origin and destination must differ', 'warning')
@@ -113,10 +131,13 @@ export default function RouteOptimizerView({ initialOrigin, initialDest }) {
     try {
       const res = await optimizeRoute(origin, destination, priority)
       const payload = res.data.data
-      setResults(payload)
-      if (payload?.options?.length) {
-        setSelected(payload.options[0])
-        setSelectedRoute({ path: payload.options[0].path })
+      // Backend returns 'routes', normalize to 'options'
+      const options = normalizeRoutes(payload.routes || payload.options, payload.priority || priority)
+      const normalized = { origin: payload.origin, destination: payload.destination, options }
+      setResults(normalized)
+      if (options.length) {
+        setSelected(options[0])
+        setSelectedRoute({ path: options[0].path })
       }
     } catch (err) {
       console.warn('API route optimization failed, using mock data')
@@ -125,7 +146,7 @@ export default function RouteOptimizerView({ initialOrigin, initialDest }) {
       const mockPayload = {
         origin,
         destination,
-        options: mockRoutes.options.map(o => ({
+        options: normalizeRoutes(mockRoutes.options || mockRoutes.routes, priority).map(o => ({
           ...o,
           path: [origin, ...o.path.slice(1, -1), destination]
         }))

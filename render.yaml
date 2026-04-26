@@ -1,26 +1,32 @@
 services:
-  # Node.js Express Backend
+  # 1. Node.js Express Backend
   - type: web
     name: chainguard-api
     env: node
     plan: free
+    rootDir: chainguard-backend
     buildCommand: npm install
     startCommand: npm start
     envVars:
       - key: SUPABASE_URL
         sync: false
-      - key: SUPABASE_KEY
+      - key: SUPABASE_ANON_KEY
         sync: false
-      - key: ML_SERVICE_URL
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: ML_ENGINE_URL
         value: "https://chainguard-ml.onrender.com"
+      - key: NODE_ENV
+        value: production
 
-  # Python FastAPI ML Engine
+  # 2. Python FastAPI ML Engine
   - type: web
     name: chainguard-ml
     env: python
     plan: free
+    rootDir: chainguard-ml
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: python -m uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.10.0

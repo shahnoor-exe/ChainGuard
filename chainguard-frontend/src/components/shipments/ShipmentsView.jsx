@@ -17,8 +17,8 @@ export default function ShipmentsView({ onNavigate }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-text-primary font-bold text-lg">Shipment Management</h2>
-          <p className="text-text-muted text-sm">{shipments.length} total shipments tracked</p>
+          <h2 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Shipment Management</h2>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{shipments.length} total shipments tracked</p>
         </div>
       </div>
       <ShipmentTable

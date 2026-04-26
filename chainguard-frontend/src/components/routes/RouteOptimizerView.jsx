@@ -7,20 +7,20 @@ import ShipmentMap from '../map/ShipmentMap'
 import mockRoutes from '../../data/mock_routes.json'
 
 const PRIORITIES = [
-  { id: 'speed',  label: 'Fastest',  icon: Zap,          color: 'text-blue-400'  },
-  { id: 'cost',   label: 'Cheapest', icon: DollarSign,   color: 'text-amber-400' },
-  { id: 'carbon', label: 'Greenest', icon: Leaf,          color: 'text-green-400' },
+  { id: 'speed',  label: 'Fastest',  icon: Zap,          color: '#60A5FA'  },
+  { id: 'cost',   label: 'Cheapest', icon: DollarSign,   color: '#FFB300' },
+  { id: 'carbon', label: 'Greenest', icon: Leaf,          color: '#00E676' },
 ]
 
-function ScoreBar({ label, value, color = 'bg-chainguard-emerald' }) {
+function ScoreBar({ label, value, color = 'var(--accent-primary)' }) {
   return (
     <div>
       <div className="flex justify-between text-xs mb-1">
-        <span className="text-text-muted">{label}</span>
-        <span className="text-text-primary font-medium">{value}%</span>
+        <span style={{ color: 'var(--text-secondary)' }}>{label}</span>
+        <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{value}%</span>
       </div>
-      <div className="h-1.5 bg-bg-primary rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full transition-all duration-700`} style={{ width: `${value}%` }} />
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-interactive)' }}>
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${value}%`, background: color }} />
       </div>
     </div>
   )
@@ -30,17 +30,21 @@ function RouteOptionCard({ option, index, isSelected, onSelect }) {
   const isRecommended = index === 0
   return (
     <div onClick={() => onSelect(option)}
-      className={`card p-5 cursor-pointer transition-all duration-200 hover:border-chainguard-emerald/50 space-y-4
-        ${isSelected ? 'border-chainguard-emerald bg-chainguard-emerald/5' : ''}`}>
+      className="card p-5 cursor-pointer transition-all duration-200 space-y-4"
+      style={{
+        borderColor: isSelected ? 'var(--accent-primary)' : undefined,
+        background: isSelected ? 'rgba(0,212,170,0.05)' : undefined,
+      }}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-text-muted text-xs">Option {index + 1}</p>
-          <p className="font-bold text-text-primary text-sm mt-0.5">
+          <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Option {index + 1}</p>
+          <p className="font-bold text-sm mt-0.5" style={{ color: 'var(--text-primary)' }}>
             {option.priority?.charAt(0).toUpperCase() + option.priority?.slice(1)} Route
           </p>
         </div>
         {isRecommended && (
-          <span className="text-xs bg-chainguard-emerald/20 text-chainguard-emerald border border-chainguard-emerald/40 px-2 py-0.5 rounded-full font-semibold">
+          <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
+            style={{ background: 'var(--accent-subtle)', color: 'var(--accent-primary)', border: '1px solid rgba(0,212,170,0.3)' }}>
             RECOMMENDED
           </span>
         )}
@@ -50,8 +54,8 @@ function RouteOptionCard({ option, index, isSelected, onSelect }) {
       <div className="flex items-center gap-1 flex-wrap text-xs">
         {(option.path || []).map((city, i, arr) => (
           <span key={i} className="flex items-center gap-1">
-            <span className="text-text-primary font-medium">{city}</span>
-            {i < arr.length - 1 && <span className="text-text-muted">→</span>}
+            <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{city}</span>
+            {i < arr.length - 1 && <span style={{ color: 'var(--text-faint)' }}>→</span>}
           </span>
         ))}
       </div>
@@ -63,29 +67,29 @@ function RouteOptionCard({ option, index, isSelected, onSelect }) {
           { icon: '₹', label: 'Toll Cost', value: option.total_cost ? `₹${new Intl.NumberFormat('en-IN').format(option.total_cost)}` : '—' },
           { icon: '🌱', label: 'CO₂', value: `${option.total_carbon_kg?.toFixed(0)} kg` },
         ].map(m => (
-          <div key={m.label} className="bg-bg-primary rounded-lg p-2">
+          <div key={m.label} className="rounded-lg p-2" style={{ background: 'var(--bg-elevated)' }}>
             <p className="text-base">{m.icon}</p>
-            <p className="text-text-primary font-bold text-sm tabular-nums">{m.value}</p>
-            <p className="text-text-muted text-[10px]">{m.label}</p>
+            <p className="font-bold text-sm tabular-nums" style={{ color: 'var(--text-primary)' }}>{m.value}</p>
+            <p className="text-[10px]" style={{ color: 'var(--text-faint)' }}>{m.label}</p>
           </div>
         ))}
       </div>
 
       {/* Score bars */}
       <div className="space-y-2">
-        <ScoreBar label="Speed Score"  value={Math.round(option.scores?.speed  || 0)} color="bg-blue-500" />
-        <ScoreBar label="Cost Score"   value={Math.round(option.scores?.cost   || 0)} color="bg-amber-500" />
-        <ScoreBar label="Carbon Score" value={Math.round(option.scores?.carbon || 0)} color="bg-green-500" />
+        <ScoreBar label="Speed Score"  value={Math.round(option.scores?.speed  || 0)} color="#60A5FA" />
+        <ScoreBar label="Cost Score"   value={Math.round(option.scores?.cost   || 0)} color="#FFB300" />
+        <ScoreBar label="Carbon Score" value={Math.round(option.scores?.carbon || 0)} color="#00E676" />
       </div>
 
       {option.highways?.length > 0 && (
-        <p className="text-text-muted text-xs">Via: {option.highways.join(', ')}</p>
+        <p className="text-xs" style={{ color: 'var(--text-faint)' }}>Via: {option.highways.join(', ')}</p>
       )}
 
       <button
         onClick={e => { e.stopPropagation(); onSelect(option) }}
-        className={`w-full py-2 rounded-lg text-sm font-medium transition-colors
-          ${isSelected ? 'bg-chainguard-emerald text-black' : 'btn-secondary justify-center'}`}>
+        className={`w-full py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${isSelected ? '' : 'btn-secondary justify-center'}`}
+        style={isSelected ? { background: 'var(--accent-primary)', color: '#080B10' } : undefined}>
         {isSelected ? '✓ Selected' : 'Select This Route'}
       </button>
     </div>
@@ -143,32 +147,36 @@ export default function RouteOptimizerView({ initialOrigin, initialDest }) {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-text-primary font-bold text-lg">Route Optimizer</h2>
+      <h2 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Route Optimizer</h2>
 
       {/* Input form */}
       <div className="card p-5">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
           <div>
-            <label className="text-xs text-text-muted mb-1 block">Origin City</label>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-faint)' }}>Origin City</label>
             <select className="select-field" value={origin} onChange={e => setOrigin(e.target.value)}>
               <option value="">Select city...</option>
               {INDIA_CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-text-muted mb-1 block">Destination City</label>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-faint)' }}>Destination City</label>
             <select className="select-field" value={destination} onChange={e => setDest(e.target.value)}>
               <option value="">Select city...</option>
               {INDIA_CITIES.filter(c => c !== origin).map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-text-muted mb-1 block">Priority</label>
+            <label className="text-xs mb-1 block" style={{ color: 'var(--text-faint)' }}>Priority</label>
             <div className="flex gap-1">
               {PRIORITIES.map(p => (
                 <button key={p.id} onClick={() => setPriority(p.id)}
-                  className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1
-                    ${priority === p.id ? 'bg-chainguard-navy text-white' : 'bg-bg-elevated text-text-muted hover:text-text-primary'}`}>
+                  className="flex-1 py-2 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1 cursor-pointer"
+                  style={{
+                    background: priority === p.id ? 'var(--accent-primary)' : 'var(--bg-elevated)',
+                    color: priority === p.id ? '#080B10' : 'var(--text-secondary)',
+                    border: 'none',
+                  }}>
                   <p.icon className="w-3 h-3" /> {p.label}
                 </button>
               ))}
@@ -183,9 +191,9 @@ export default function RouteOptimizerView({ initialOrigin, initialDest }) {
 
       {/* Error */}
       {error && (
-        <div className="card p-4 flex items-center gap-3 border-red-900/50">
-          <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
-          <p className="text-red-300 text-sm">{error}</p>
+        <div className="card p-4 flex items-center gap-3" style={{ borderColor: 'rgba(255,82,82,0.4)' }}>
+          <AlertCircle className="w-5 h-5 shrink-0" style={{ color: 'var(--status-danger)' }} />
+          <p className="text-sm" style={{ color: 'var(--status-danger)' }}>{error}</p>
           <button onClick={handleOptimize} className="ml-auto btn-secondary text-xs">Retry</button>
         </div>
       )}
@@ -207,8 +215,8 @@ export default function RouteOptimizerView({ initialOrigin, initialDest }) {
       {results?.options && (
         <>
           <div className="flex items-center gap-3">
-            <MapPin className="w-4 h-4 text-chainguard-emerald" />
-            <p className="text-sm text-text-muted">
+            <MapPin className="w-4 h-4" style={{ color: 'var(--accent-primary)' }} />
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
               {results.origin} → {results.destination} — {results.options.length} route options found
             </p>
           </div>
@@ -224,7 +232,7 @@ export default function RouteOptimizerView({ initialOrigin, initialDest }) {
 
           {/* Map preview */}
           <div>
-            <p className="text-sm text-text-muted mb-3 flex items-center gap-2">
+            <p className="text-sm mb-3 flex items-center gap-2" style={{ color: 'var(--text-secondary)' }}>
               <MapPin className="w-4 h-4" /> Selected route preview
             </p>
             <ShipmentMap selectedRoute={selectedOption ? { path: selectedOption.path } : null} />

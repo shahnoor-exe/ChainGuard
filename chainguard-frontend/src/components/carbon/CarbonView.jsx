@@ -39,25 +39,25 @@ export default function CarbonView() {
       {
         label: 'Actual Emissions (kg CO₂)',
         data: trend.actual,
-        borderColor: '#F59E0B',
-        backgroundColor: 'rgba(245,158,11,0.1)',
+        borderColor: '#FFB300',
+        backgroundColor: 'rgba(255,179,0,0.1)',
         fill: true,
         tension: 0.4,
         borderWidth: 2,
         pointRadius: 4,
-        pointBackgroundColor: '#F59E0B',
+        pointBackgroundColor: '#FFB300',
       },
       {
         label: 'If Greenest Route Chosen',
         data: trend.green,
-        borderColor: '#00C896',
-        backgroundColor: 'rgba(0,200,150,0.08)',
+        borderColor: '#00E676',
+        backgroundColor: 'rgba(0,230,118,0.08)',
         fill: true,
         tension: 0.4,
         borderWidth: 2,
         borderDash: [6, 4],
         pointRadius: 4,
-        pointBackgroundColor: '#00C896',
+        pointBackgroundColor: '#00E676',
       },
     ],
   }
@@ -84,24 +84,28 @@ export default function CarbonView() {
 
   return (
     <div className="space-y-5">
-      <h2 className="text-text-primary font-bold text-lg">Carbon Footprint Dashboard</h2>
+      <h2 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Carbon Footprint Dashboard</h2>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <KPICard
           title="Total CO₂ This Month"
-          value={`${new Intl.NumberFormat('en-IN').format(Math.round(totalCo2))} kg`}
+          value={Math.round(totalCo2)}
+          suffix=" kg"
           icon={Leaf} color="warning"
           subtitle="Across all active shipments"
         />
         <KPICard
           title="Avg Per Shipment"
-          value={`${avgCo2.toFixed(1)} kg`}
+          value={avgCo2}
+          suffix=" kg"
+          decimals={1}
           icon={TrendingDown} color="success"
           subtitle="CO₂ equivalent"
         />
         <KPICard
           title="Green Routes Chosen"
-          value={`${greenPct}%`}
+          value={greenPct}
+          suffix="%"
           icon={CheckCircle} color="success"
           subtitle={`${greenCount} of ${shipments.length} shipments`}
         />
@@ -109,20 +113,20 @@ export default function CarbonView() {
 
       {/* Line chart */}
       <div className="card p-5">
-        <h3 className="font-semibold text-sm text-text-primary mb-4">
+        <h3 className="font-display font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>
           Carbon Emissions vs. Green Route Potential — Last 7 Days
         </h3>
         <div style={{ height: 320 }}>
           <Line data={chartData} options={chartOptions} />
         </div>
-        <p className="text-text-muted text-xs mt-3 text-center">
+        <p className="text-xs mt-3 text-center" style={{ color: 'var(--text-secondary)' }}>
           Switching to greenest routes could reduce emissions by ~{Math.round((1 - trend.green.reduce((a,b)=>a+b,0)/trend.actual.reduce((a,b)=>a+b,0))*100)}%
         </p>
       </div>
 
       {/* Per-shipment breakdown */}
       <div className="card p-5">
-        <h3 className="font-semibold text-sm text-text-primary mb-4">Top 10 Highest Emission Shipments</h3>
+        <h3 className="font-display font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Top 10 Highest Emission Shipments</h3>
         <div className="space-y-2">
           {[...shipments]
             .sort((a,b) => b.weight_kg - a.weight_kg)
@@ -132,11 +136,11 @@ export default function CarbonView() {
               const pct = Math.min(100, (s.weight_kg || 0) / 10)
               return (
                 <div key={s.id} className="flex items-center gap-3">
-                  <span className="text-text-muted text-xs w-20 font-mono shrink-0">{s.shipment_code}</span>
-                  <div className="flex-1 h-2 bg-bg-primary rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500 rounded-full" style={{ width: `${pct}%` }} />
+                  <span className="text-xs w-20 font-mono shrink-0" style={{ color: 'var(--text-secondary)' }}>{s.shipment_code}</span>
+                  <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-interactive)' }}>
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: '#FFB300' }} />
                   </div>
-                  <span className="text-text-muted text-xs w-16 text-right tabular-nums shrink-0">{co2} kg</span>
+                  <span className="text-xs w-16 text-right tabular-nums shrink-0" style={{ color: 'var(--text-secondary)' }}>{co2} kg</span>
                 </div>
               )
             })}

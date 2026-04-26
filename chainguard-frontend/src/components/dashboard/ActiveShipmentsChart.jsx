@@ -13,7 +13,7 @@ export default function ActiveShipmentsChart({ shipments = [] }) {
     labels: ['In Transit', 'At Risk', 'Delayed', 'Delivered'],
     datasets: [{
       data: [counts.in_transit, counts.at_risk, counts.delayed, counts.delivered],
-      backgroundColor: ['#3B82F6','#EF4444','#F59E0B','#00C896'],
+      backgroundColor: ['#60A5FA','#FF5252','#FFB300','#00E676'],
       borderColor: '#161B22',
       borderWidth: 3,
     }],
@@ -25,7 +25,7 @@ export default function ActiveShipmentsChart({ shipments = [] }) {
     plugins: {
       legend: {
         position: 'bottom',
-        labels: { color: '#8B949E', padding: 16, font: { size: 11 } },
+        labels: { color: '#8B949E', padding: 16, font: { size: 11, family: 'Inter' } },
       },
       tooltip: {
         callbacks: {
@@ -36,7 +36,7 @@ export default function ActiveShipmentsChart({ shipments = [] }) {
   }
   return (
     <div className="card p-5">
-      <h3 className="font-semibold text-sm text-text-primary mb-4">Shipments by Status</h3>
+      <h3 className="font-display font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Shipments by Status</h3>
       <div style={{ height: 220 }}>
         <Doughnut data={data} options={options} />
       </div>

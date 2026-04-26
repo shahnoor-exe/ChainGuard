@@ -73,7 +73,7 @@ export default function DigitalTwinView() {
     node.append('circle')
       .attr('r', d => MAJOR_HUBS.has(d.city || d.id) ? 14 : 10)
       .attr('fill', d => {
-        if (disruptedCities.has(d.city || d.id)) return '#EF4444'
+        if (disruptedCities.has(d.city || d.id)) return '#FF5252'
         if (MAJOR_HUBS.has(d.city || d.id)) return '#0F4C81'
         return '#21262D'
       })
@@ -111,8 +111,8 @@ export default function DigitalTwinView() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-text-primary font-bold text-lg">Digital Twin — Supply Chain Graph</h2>
-        <p className="text-text-muted text-sm">Live network visualization. Drag nodes, click to inspect. Red = active disruption.</p>
+        <h2 className="font-display font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Digital Twin — Supply Chain Graph</h2>
+        <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Live network visualization. Drag nodes, click to inspect. Red = active disruption.</p>
       </div>
 
       <div className="card overflow-hidden">
@@ -126,10 +126,10 @@ export default function DigitalTwinView() {
       </div>
 
       {/* Legend */}
-      <div className="flex gap-5 text-xs text-text-muted">
+      <div className="flex gap-5 text-xs" style={{ color: 'var(--text-secondary)' }}>
         {[
           { color: '#0F4C81', label: 'Major Hub' },
-          { color: '#EF4444', label: 'Active Disruption' },
+          { color: '#FF5252', label: 'Active Disruption' },
           { color: '#21262D', label: 'Normal City' },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-2">
@@ -141,28 +141,28 @@ export default function DigitalTwinView() {
 
       {/* City info panel */}
       {selected && (
-        <div className="card p-5 animate-fadeIn">
+        <div className="card p-5">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <h3 className="font-bold text-text-primary">{selected.city || selected.id}</h3>
-              <p className="text-text-muted text-xs">{selected.state || ''}</p>
+              <h3 className="font-bold" style={{ color: 'var(--text-primary)' }}>{selected.city || selected.id}</h3>
+              <p className="text-xs" style={{ color: 'var(--text-faint)' }}>{selected.state || ''}</p>
             </div>
             <div className="flex gap-2">
               {MAJOR_HUBS.has(selected.city || selected.id) && (
-                <span className="text-xs bg-blue-900 text-blue-300 px-2 py-0.5 rounded-full">Major Hub</span>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(96,165,250,0.15)', color: '#60A5FA' }}>Major Hub</span>
               )}
               {disruptedCities.has(selected.city || selected.id) && (
-                <span className="text-xs bg-red-900 text-red-300 px-2 py-0.5 rounded-full">Disrupted</span>
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--status-danger-bg)', color: 'var(--status-danger)' }}>Disrupted</span>
               )}
             </div>
           </div>
           {nodeDisruptions.length > 0 && (
             <div className="space-y-2">
-              <p className="text-xs text-text-muted font-semibold uppercase tracking-wider">Active Disruptions</p>
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-faint)' }}>Active Disruptions</p>
               {nodeDisruptions.map(d => (
-                <div key={d.id} className="bg-bg-primary rounded-lg p-3">
-                  <p className="text-text-primary text-xs font-medium">{d.title}</p>
-                  <p className="text-text-muted text-[11px] mt-1">{d.description}</p>
+                <div key={d.id} className="rounded-lg p-3" style={{ background: 'var(--bg-elevated)' }}>
+                  <p className="text-xs font-medium" style={{ color: 'var(--text-primary)' }}>{d.title}</p>
+                  <p className="text-[11px] mt-1" style={{ color: 'var(--text-secondary)' }}>{d.description}</p>
                 </div>
               ))}
             </div>

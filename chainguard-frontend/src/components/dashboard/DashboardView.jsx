@@ -21,18 +21,16 @@ export default function DashboardView({ selectedRoute }) {
       .catch(() => {})
   }, [])
 
-  const fmt = (n) => n !== undefined ? new Intl.NumberFormat('en-IN').format(n) : '—'
-
   return (
     <div className="space-y-5">
       {/* KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-        <KPICard title="Total Shipments" value={fmt(kpis?.total_shipments)} icon={Package} color="blue" isLoading={kpiLoading} />
-        <KPICard title="At Risk" value={fmt(kpis?.at_risk_count)} icon={AlertTriangle} color="danger" isLoading={kpiLoading} subtitle="Require attention" />
-        <KPICard title="Delayed" value={fmt(kpis?.delayed_count)} icon={Clock} color="warning" isLoading={kpiLoading} />
-        <KPICard title="On-Time Rate" value={kpis ? `${kpis.on_time_rate}%` : '—'} icon={CheckCircle} color="success" isLoading={kpiLoading} />
-        <KPICard title="Disruptions" value={fmt(kpis?.active_disruptions_count)} icon={Zap} color="warning" isLoading={kpiLoading} subtitle="Active now" />
-        <KPICard title="Avg CO₂" value={kpis ? `${kpis.avg_carbon_per_shipment} kg` : '—'} icon={Leaf} color="success" isLoading={kpiLoading} subtitle="Per shipment" />
+        <KPICard title="Total Shipments" value={kpis?.total_shipments} icon={Package} color="blue" isLoading={kpiLoading} />
+        <KPICard title="At Risk" value={kpis?.at_risk_count} icon={AlertTriangle} color="danger" isLoading={kpiLoading} subtitle="Require attention" />
+        <KPICard title="Delayed" value={kpis?.delayed_count} icon={Clock} color="warning" isLoading={kpiLoading} />
+        <KPICard title="On-Time Rate" value={kpis?.on_time_rate} suffix="%" icon={CheckCircle} color="success" isLoading={kpiLoading} decimals={1} />
+        <KPICard title="Disruptions" value={kpis?.active_disruptions_count} icon={Zap} color="warning" isLoading={kpiLoading} subtitle="Active now" />
+        <KPICard title="Avg CO₂" value={kpis?.avg_carbon_per_shipment} suffix=" kg" icon={Leaf} color="success" isLoading={kpiLoading} subtitle="Per shipment" decimals={1} />
       </div>
 
       {/* Map + Disruption Feed */}
@@ -41,7 +39,7 @@ export default function DashboardView({ selectedRoute }) {
           <ShipmentMap selectedRoute={selectedRoute} />
         </div>
         <div className="lg:col-span-2" style={{ minHeight: 450 }}>
-          <DisruptionFeed disruptions={disruptions} loading={dLoading} />
+          <DisruptionFeed />
         </div>
       </div>
 
@@ -51,27 +49,31 @@ export default function DashboardView({ selectedRoute }) {
 
         {/* Weather Alerts */}
         <div className="card p-5">
-          <h3 className="font-semibold text-sm text-text-primary mb-4">Weather Alerts — Major Hubs</h3>
+          <h3 className="font-display font-semibold text-sm mb-4" style={{ color: 'var(--text-primary)' }}>Weather Alerts — Major Hubs</h3>
           {weatherAlerts.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-text-muted text-sm">
+            <div className="flex items-center justify-center h-32 text-sm" style={{ color: 'var(--text-faint)' }}>
               No active weather alerts
             </div>
           ) : (
             <div className="space-y-2">
               {weatherAlerts.map((w, i) => (
-                <div key={i} className="flex items-center justify-between p-3 bg-bg-primary rounded-lg">
+                <div key={i} className="flex items-center justify-between p-3 rounded-lg"
+                  style={{ background: 'var(--bg-elevated)' }}>
                   <div>
-                    <p className="text-sm text-text-primary">{w.city}</p>
-                    <p className="text-xs text-text-muted">{w.weather_description}</p>
+                    <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{w.city}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{w.weather_description}</p>
                   </div>
                   <div className="text-right">
-                    <span className={`text-xs font-semibold px-2 py-1 rounded ${
-                      w.alert_level === 'severe' ? 'bg-red-900 text-red-300' :
-                      w.alert_level === 'warning' ? 'bg-orange-900 text-orange-300' :
-                      'bg-amber-900 text-amber-300'}`}>
+                    <span className="text-xs font-semibold px-2 py-1 rounded"
+                      style={{
+                        background: w.alert_level === 'severe' ? 'var(--status-danger-bg)' :
+                          w.alert_level === 'warning' ? 'var(--status-warn-bg)' : 'var(--accent-subtle)',
+                        color: w.alert_level === 'severe' ? 'var(--status-danger)' :
+                          w.alert_level === 'warning' ? 'var(--status-warn)' : 'var(--accent-primary)',
+                      }}>
                       {w.alert_level?.toUpperCase()}
                     </span>
-                    <p className="text-xs text-text-muted mt-1">Score: {w.weather_score}</p>
+                    <p className="text-xs mt-1" style={{ color: 'var(--text-faint)' }}>Score: {w.weather_score}</p>
                   </div>
                 </div>
               ))}

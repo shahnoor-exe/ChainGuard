@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react'
 import { fetchKPIs } from '../services/api'
 import mockKpis from '../data/mock_kpis.json'
+import { useApp } from '../context/AppContext'
 
 export function useDashboardKPIs() {
+  const { useMockData }       = useApp()
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
@@ -11,6 +13,15 @@ export function useDashboardKPIs() {
   const load = useCallback(async () => {
     setLoading(true)
     setError(null)
+
+    if (useMockData) {
+      console.log('✅ Mock data loaded successfully (KPIs)');
+      setData(mockKpis)
+      setUsingMock(true)
+      setLoading(false)
+      return
+    }
+
     try {
       const res = await fetchKPIs()
       setData(res.data.data)
@@ -23,7 +34,7 @@ export function useDashboardKPIs() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [useMockData])
 
   useEffect(() => { load() }, [load])
 

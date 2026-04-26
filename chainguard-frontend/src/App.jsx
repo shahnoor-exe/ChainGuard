@@ -99,7 +99,7 @@ function InnerApp() {
 
   // Auth loading
   if (authLoading) {
-    return <FullScreenLoader onLoadComplete={() => {}} />
+    return null; // Parent loader handles this now
   }
 
   // Not logged in
@@ -117,18 +117,7 @@ function InnerApp() {
     )
   }
 
-  // App loading
-  if (!ready) {
-    return (
-      <FullScreenLoader 
-        onLoadComplete={() => setReady(true)} 
-        onUseMockData={() => {
-          setUseMockData(true);
-          console.log('⚠️ Using mock data — backend cold starting');
-        }}
-      />
-    )
-  }
+  // App loading is also handled by parent loader now
 
   function renderView() {
     if (!allowedViews.includes(currentView)) {
@@ -185,11 +174,48 @@ function InnerApp() {
 }
 
 export default function App() {
+  const [showLoader, setShowLoader]   = useState(true);
+  const [useMockData, setUseMockData] = useState(false);
+  const loaderDismissed               = useRef(false);
+
+  useEffect(() => {
+    const nuclear = setTimeout(() => {
+      if (!loaderDismissed.current) {
+        console.warn('[App] Nuclear timeout fired — forcing dashboard open');
+        loaderDismissed.current = true;
+        setUseMockData(true);
+        setShowLoader(false);
+      }
+    }, 25000); // 25 seconds absolute maximum
+
+    return () => clearTimeout(nuclear);
+  }, []);
+
+  const handleLoadComplete = () => {
+    if (!loaderDismissed.current) {
+      loaderDismissed.current = true;
+      setShowLoader(false);
+    }
+  };
+
+  const handleUseMockData = () => {
+    setUseMockData(true);
+  };
+
+  if (showLoader) {
+    return (
+      <FullScreenLoader
+        onLoadComplete={handleLoadComplete}
+        onUseMockData={handleUseMockData}
+      />
+    );
+  }
+
   return (
     <AuthProvider>
-      <AppProvider>
+      <AppProvider useMockData={useMockData}>
         <InnerApp />
       </AppProvider>
     </AuthProvider>
-  )
+  );
 }

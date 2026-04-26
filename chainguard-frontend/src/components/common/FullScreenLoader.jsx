@@ -45,32 +45,40 @@ export default function FullScreenLoader({ onLoadComplete, onUseMockData }) {
     };
   }, []);
 
-  // Handle countdown — THIS is the fix for the stuck screen
+  const hasFired = useRef(false); // ← critical: stops double-fire
+
   useEffect(() => {
     if (countdown === null) return;
 
     if (countdown <= 0) {
-      // ← CRITICAL FIX: only run once, then actually load mock data
-      if (!mockLoadedRef.current) {
-        mockLoadedRef.current = true;
-        clearInterval(countdownRef.current);
-        setProgress(100);
-        setStatusMsg('Loading demo data...');
-        
-        // Short delay so user sees 100% before entering dashboard
-        setTimeout(() => {
-          onUseMockData && onUseMockData();   // ← tells App.jsx to use mock data
-          onLoadComplete && onLoadComplete(); // ← enters the dashboard
-        }, 600);
+      if (hasFired.current) return; // already fired, don't run again
+      hasFired.current = true;
+
+      // 1. Visually complete the bar
+      setProgress(100);
+      setStatusMsg('✓ Loading demo data...');
+
+      // 2. Tell App.jsx to use mock data
+      if (typeof onUseMockData === 'function') {
+        onUseMockData();
       }
-      return;
+
+      // 3. After 800ms (so user sees 100%), dismiss loader
+      const dismissTimer = setTimeout(() => {
+        if (typeof onLoadComplete === 'function') {
+          onLoadComplete(); // ← this sets showLoader=false in App.jsx
+        }
+      }, 800);
+
+      return () => clearTimeout(dismissTimer);
     }
 
-    countdownRef.current = setTimeout(() => {
-      setCountdown(prev => prev - 1);
+    // Still counting down — decrement every 1 second
+    const tick = setTimeout(() => {
+      setCountdown(c => c - 1);
     }, 1000);
 
-    return () => clearTimeout(countdownRef.current);
+    return () => clearTimeout(tick);
   }, [countdown, onUseMockData, onLoadComplete]);
 
   return (

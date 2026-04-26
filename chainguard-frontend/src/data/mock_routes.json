@@ -1,0 +1,46 @@
+{
+  "options": [
+    {
+      "priority": "speed",
+      "path": ["Origin", "Hub A", "Destination"],
+      "highways": ["NH-44", "NH-48"],
+      "total_distance_km": 850,
+      "total_duration_hrs": 14.5,
+      "total_cost": 24500,
+      "total_carbon_kg": 68,
+      "scores": {
+        "speed": 95,
+        "cost": 70,
+        "carbon": 65
+      }
+    },
+    {
+      "priority": "cost",
+      "path": ["Origin", "Hub B", "Destination"],
+      "highways": ["SH-12", "NH-44"],
+      "total_distance_km": 920,
+      "total_duration_hrs": 17.0,
+      "total_cost": 18500,
+      "total_carbon_kg": 74,
+      "scores": {
+        "speed": 60,
+        "cost": 98,
+        "carbon": 60
+      }
+    },
+    {
+      "priority": "carbon",
+      "path": ["Origin", "Destination"],
+      "highways": ["NH-48 (Green Corridor)"],
+      "total_distance_km": 860,
+      "total_duration_hrs": 15.5,
+      "total_cost": 26000,
+      "total_carbon_kg": 52,
+      "scores": {
+        "speed": 85,
+        "cost": 65,
+        "carbon": 99
+      }
+    }
+  ]
+}

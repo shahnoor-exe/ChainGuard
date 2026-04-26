@@ -1,0 +1,36 @@
+{
+  "cities": [
+    "Mumbai", "Delhi", "Bangalore", "Chennai", "Hyderabad",
+    "Kolkata", "Pune", "Ahmedabad", "Jaipur", "Lucknow",
+    "Nagpur", "Bhopal", "Indore", "Surat", "Vadodara",
+    "Coimbatore", "Kochi", "Vizag", "Patna", "Chandigarh",
+    "Ludhiana", "Amritsar", "Guwahati", "Bhubaneswar", "Raipur"
+  ],
+  "edges": [
+    { "from": "Mumbai", "to": "Pune", "distance_km": 149, "nh": "NH-48", "duration_hrs": 3.2, "carbon_kg": 18.5, "toll_inr": 340 },
+    { "from": "Mumbai", "to": "Surat", "distance_km": 290, "nh": "NH-48", "duration_hrs": 5.1, "carbon_kg": 36.2, "toll_inr": 520 },
+    { "from": "Mumbai", "to": "Nagpur", "distance_km": 840, "nh": "NH-44", "duration_hrs": 13.5, "carbon_kg": 105, "toll_inr": 1240 },
+    { "from": "Delhi", "to": "Jaipur", "distance_km": 280, "nh": "NH-48", "duration_hrs": 4.8, "carbon_kg": 35, "toll_inr": 460 },
+    { "from": "Delhi", "to": "Chandigarh", "distance_km": 250, "nh": "NH-44", "duration_hrs": 4.5, "carbon_kg": 31, "toll_inr": 380 },
+    { "from": "Delhi", "to": "Lucknow", "distance_km": 555, "nh": "NH-44", "duration_hrs": 8.5, "carbon_kg": 69, "toll_inr": 820 },
+    { "from": "Bangalore", "to": "Chennai", "distance_km": 346, "nh": "NH-44", "duration_hrs": 5.5, "carbon_kg": 43, "toll_inr": 580 },
+    { "from": "Bangalore", "to": "Hyderabad", "distance_km": 570, "nh": "NH-44", "duration_hrs": 9.0, "carbon_kg": 71, "toll_inr": 920 },
+    { "from": "Bangalore", "to": "Coimbatore", "distance_km": 365, "nh": "NH-544", "duration_hrs": 6.0, "carbon_kg": 45, "toll_inr": 560 },
+    { "from": "Chennai", "to": "Coimbatore", "distance_km": 495, "nh": "NH-544", "duration_hrs": 7.5, "carbon_kg": 62, "toll_inr": 720 },
+    { "from": "Hyderabad", "to": "Nagpur", "distance_km": 500, "nh": "NH-44", "duration_hrs": 8.0, "carbon_kg": 62, "toll_inr": 740 },
+    { "from": "Pune", "to": "Hyderabad", "distance_km": 570, "nh": "NH-65", "duration_hrs": 9.0, "carbon_kg": 71, "toll_inr": 850 },
+    { "from": "Kolkata", "to": "Bhubaneswar", "distance_km": 440, "nh": "NH-16", "duration_hrs": 7.5, "carbon_kg": 55, "toll_inr": 680 },
+    { "from": "Kolkata", "to": "Patna", "distance_km": 600, "nh": "NH-19", "duration_hrs": 10.0, "carbon_kg": 75, "toll_inr": 890 },
+    { "from": "Ahmedabad", "to": "Surat", "distance_km": 265, "nh": "NH-48", "duration_hrs": 4.0, "carbon_kg": 33, "toll_inr": 420 },
+    { "from": "Ahmedabad", "to": "Indore", "distance_km": 390, "nh": "NH-48", "duration_hrs": 6.5, "carbon_kg": 49, "toll_inr": 620 },
+    { "from": "Indore", "to": "Bhopal", "distance_km": 195, "nh": "NH-46", "duration_hrs": 3.5, "carbon_kg": 24, "toll_inr": 320 },
+    { "from": "Bhopal", "to": "Nagpur", "distance_km": 350, "nh": "NH-44", "duration_hrs": 6.0, "carbon_kg": 44, "toll_inr": 540 },
+    { "from": "Nagpur", "to": "Raipur", "distance_km": 290, "nh": "NH-53", "duration_hrs": 5.0, "carbon_kg": 36, "toll_inr": 460 },
+    { "from": "Lucknow", "to": "Patna", "distance_km": 570, "nh": "NH-19", "duration_hrs": 9.5, "carbon_kg": 71, "toll_inr": 840 },
+    { "from": "Chandigarh", "to": "Ludhiana", "distance_km": 100, "nh": "NH-44", "duration_hrs": 2.0, "carbon_kg": 12, "toll_inr": 180 },
+    { "from": "Ludhiana", "to": "Amritsar", "distance_km": 140, "nh": "NH-44", "duration_hrs": 2.5, "carbon_kg": 17, "toll_inr": 240 },
+    { "from": "Kochi", "to": "Coimbatore", "distance_km": 195, "nh": "NH-544", "duration_hrs": 4.0, "carbon_kg": 24, "toll_inr": 350 },
+    { "from": "Vizag", "to": "Bhubaneswar", "distance_km": 420, "nh": "NH-16", "duration_hrs": 7.0, "carbon_kg": 52, "toll_inr": 640 },
+    { "from": "Hyderabad", "to": "Vizag", "distance_km": 625, "nh": "NH-65", "duration_hrs": 10.0, "carbon_kg": 78, "toll_inr": 940 }
+  ]
+}

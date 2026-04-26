@@ -1,0 +1,15 @@
+{
+  "total_shipments": 30,
+  "at_risk_count": 7,
+  "delayed_count": 3,
+  "delivered_today": 6,
+  "on_time_rate": 81.2,
+  "avg_carbon_per_shipment": 54.2,
+  "active_disruptions_count": 8,
+  "high_risk_suppliers_count": 3,
+  "critical_alerts": [
+    { "id": "mock-1", "title": "NH-44 Blockade near Nagpur", "severity": "critical", "type": "news", "affected_cities": ["Nagpur","Bhopal"] },
+    { "id": "mock-2", "title": "Heavy Rain Warning - Mumbai-Pune Corridor", "severity": "high", "type": "weather", "affected_cities": ["Mumbai","Pune"] },
+    { "id": "mock-3", "title": "Supplier Adani Logistics Risk Elevated to 82", "severity": "high", "type": "operational", "affected_cities": ["Ahmedabad"] }
+  ]
+}

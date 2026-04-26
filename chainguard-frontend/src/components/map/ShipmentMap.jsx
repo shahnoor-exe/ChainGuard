@@ -5,7 +5,6 @@ import 'leaflet/dist/leaflet.css'
 import { useShipments } from '../../hooks/useShipments'
 import { fetchRiskHeatmap } from '../../services/api'
 
-// Fix Leaflet default icon in Vite
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -15,37 +14,27 @@ L.Icon.Default.mergeOptions({
 
 function MapResizer() {
   const map = useMap()
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      map.invalidateSize()
-    }, 250)
-    return () => clearTimeout(timer)
-  }, [map])
+  useEffect(() => { const t = setTimeout(() => map.invalidateSize(), 250); return () => clearTimeout(t) }, [map])
   return null
 }
 
 function riskColor(score) {
-  if (score <= 30) return '#00C896'
-  if (score <= 60) return '#F59E0B'
-  if (score <= 80) return '#F97316'
-  return '#EF4444'
-}
-
-const STATUS_LABELS = {
-  in_transit: 'In Transit', at_risk: 'At Risk',
-  delayed: 'Delayed', delivered: 'Delivered',
+  if (score <= 30) return '#00E676'
+  if (score <= 60) return '#FFB300'
+  if (score <= 80) return '#FF5252'
+  return '#FF1744'
 }
 
 const CITY_COORDS = {
-  Mumbai:[19.076,72.877], Delhi:[28.704,77.102], Bangalore:[12.972,77.595],
-  Chennai:[13.083,80.271], Hyderabad:[17.385,78.487], Kolkata:[22.573,88.364],
-  Pune:[18.52,73.857], Ahmedabad:[23.023,72.571], Jaipur:[26.912,75.787],
-  Lucknow:[26.847,80.946], Nagpur:[21.146,79.088], Bhopal:[23.26,77.413],
-  Indore:[22.72,75.858], Surat:[21.17,72.831], Vadodara:[22.307,73.181],
-  Coimbatore:[11.017,76.956], Kochi:[9.931,76.267], Vizag:[17.687,83.219],
-  Patna:[25.609,85.138], Chandigarh:[30.733,76.779], Ludhiana:[30.901,75.857],
-  Amritsar:[31.634,74.872], Guwahati:[26.145,91.736], Bhubaneswar:[20.296,85.825],
-  Raipur:[21.251,81.63],
+  Mumbai:[19.076,72.8777], Delhi:[28.7041,77.1025], Bangalore:[12.9716,77.5946],
+  Chennai:[13.0827,80.2707], Hyderabad:[17.385,78.4867], Kolkata:[22.5726,88.3639],
+  Pune:[18.5204,73.8567], Ahmedabad:[23.0225,72.5714], Jaipur:[26.9124,75.7873],
+  Lucknow:[26.8467,80.9462], Nagpur:[21.1458,79.0882], Bhopal:[23.2599,77.4126],
+  Indore:[22.7196,75.8577], Surat:[21.1702,72.8311], Vadodara:[22.3072,73.1812],
+  Coimbatore:[11.0168,76.9558], Kochi:[9.9312,76.2673], Vizag:[17.6868,83.2185],
+  Patna:[25.6093,85.1376], Chandigarh:[30.7333,76.7794], Ludhiana:[30.901,75.8573],
+  Amritsar:[31.634,74.8723], Guwahati:[26.1445,91.7362], Bhubaneswar:[20.2961,85.8245],
+  Raipur:[21.2514,81.6296],
 }
 
 export default function ShipmentMap({ selectedRoute }) {
@@ -54,97 +43,69 @@ export default function ShipmentMap({ selectedRoute }) {
 
   useEffect(() => {
     fetchRiskHeatmap()
-      .then(r => setHeatmap(r.data.data || []))
-      .catch(() => {})
+      .then(r => { if (r.data?.data?.cities) setHeatmap(r.data.data.cities) })
+      .catch(() => {
+        setHeatmap(Object.entries(CITY_COORDS).map(([city, [lat, lng]]) => ({
+          city, lat, lng, composite_risk: Math.floor(Math.random() * 60 + 10),
+        })))
+      })
   }, [])
 
+  const routeCoords = selectedRoute?.path
+    ?.map(c => CITY_COORDS[c])
+    .filter(Boolean) || []
+
   return (
-    <div className="card overflow-hidden" style={{ height: 450 }}>
-      <MapContainer
-        center={[20.5937, 78.9629]}
-        zoom={5}
-        style={{ width: '100%', height: '100%' }}
-        scrollWheelZoom={false}
-      >
+    <div className="card overflow-hidden shipment-map" style={{ height: 450 }}>
+      <MapContainer center={[20.5937, 78.9629]} zoom={5} zoomControl={false}
+        style={{ width: '100%', height: '100%' }} scrollWheelZoom={false}>
         <MapResizer />
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://carto.com">CARTO</a>'
         />
-
-        {/* City dots */}
-        {Object.entries(CITY_COORDS).map(([city, [lat, lng]]) => (
-          <CircleMarker key={city} center={[lat, lng]} radius={3}
-            pathOptions={{ color: '#8B949E', fillColor: '#8B949E', fillOpacity: 0.6 }}>
-            <Tooltip>{city}</Tooltip>
-          </CircleMarker>
+        {/* Heatmap circles */}
+        {heatmap.map(city => (
+          <Circle key={city.city} center={[city.lat, city.lng]}
+            radius={city.composite_risk * 500}
+            pathOptions={{ color: riskColor(city.composite_risk), fillColor: riskColor(city.composite_risk), fillOpacity: 0.15, weight: 1 }}>
+            <Tooltip direction="top" className="!bg-transparent !border-none !shadow-none">
+              <span className="text-xs font-mono px-2 py-1 rounded" style={{ background: 'var(--bg-surface)', color: riskColor(city.composite_risk) }}>
+                {city.city}: {city.composite_risk}
+              </span>
+            </Tooltip>
+          </Circle>
         ))}
-
-        {/* Risk heatmap circles */}
-        {heatmap.map(c => {
-          const coords = CITY_COORDS[c.city]
-          if (!coords) return null
-          return (
-            <Circle key={c.city} center={coords}
-              radius={c.risk_score * 1000}
-              pathOptions={{ color: riskColor(c.risk_score), fillColor: riskColor(c.risk_score), fillOpacity: 0.15, weight: 0 }}
-            />
-          )
-        })}
-
         {/* Shipment markers */}
         {shipments.filter(s => s.current_location_lat && s.current_location_lng).map(s => (
-          <CircleMarker
-            key={s.id}
-            center={[s.current_location_lat, s.current_location_lng]}
-            radius={s.risk_score > 80 ? 9 : 7}
-            pathOptions={{
-              color: riskColor(s.risk_score),
-              fillColor: riskColor(s.risk_score),
-              fillOpacity: 0.85,
-              weight: 2,
-            }}
-          >
-            <Popup>
-              <div className="text-sm min-w-[200px]" style={{ fontFamily: 'system-ui' }}>
-                <p className="font-bold text-base mb-1">{s.shipment_code}</p>
-                <p className="text-gray-600">{s.origin_city} → {s.destination_city}</p>
-                <div className="flex gap-2 mt-2 flex-wrap">
-                  <span className="px-2 py-0.5 rounded bg-gray-100 text-xs">{STATUS_LABELS[s.status]}</span>
-                  <span className="px-2 py-0.5 rounded text-xs text-white" style={{ backgroundColor: riskColor(s.risk_score) }}>
-                    Risk: {s.risk_score}
-                  </span>
-                </div>
-                {s.predicted_eta && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    ETA: {new Date(s.predicted_eta).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
-                  </p>
-                )}
+          <CircleMarker key={s.id} center={[s.current_location_lat, s.current_location_lng]}
+            radius={s.risk_score > 80 ? 8 : s.risk_score > 50 ? 6 : 4}
+            pathOptions={{ color: riskColor(s.risk_score), fillColor: riskColor(s.risk_score), fillOpacity: 0.9, weight: 2 }}>
+            <Popup className="!bg-[var(--bg-surface)]">
+              <div style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                <p className="font-bold text-sm" style={{ color: 'var(--accent-primary)' }}>{s.shipment_code}</p>
+                <p className="text-xs">{s.origin_city} → {s.destination_city}</p>
+                <p className="text-xs">Risk: <span style={{ color: riskColor(s.risk_score) }}>{s.risk_score}/100</span></p>
               </div>
             </Popup>
           </CircleMarker>
         ))}
-
+        {/* Major city dots */}
+        {Object.entries(CITY_COORDS).map(([city, [lat, lng]]) => (
+          <CircleMarker key={city} center={[lat, lng]} radius={3}
+            pathOptions={{ color: '#00D4AA', fillColor: '#00D4AA', fillOpacity: 0.4, weight: 1 }}>
+            <Tooltip permanent direction="bottom" offset={[0, 8]}
+              className="!bg-transparent !border-none !shadow-none !p-0">
+              <span style={{ fontSize: '9px', color: '#8B949E', fontFamily: 'var(--font-mono)' }}>{city}</span>
+            </Tooltip>
+          </CircleMarker>
+        ))}
         {/* Selected route polyline */}
-        {selectedRoute && selectedRoute.path && (
-          <Polyline
-            positions={selectedRoute.path
-              .map(city => CITY_COORDS[city])
-              .filter(Boolean)}
-            pathOptions={{ color: '#00C896', weight: 3, dashArray: '8 4' }}
-          />
+        {routeCoords.length > 1 && (
+          <Polyline positions={routeCoords}
+            pathOptions={{ color: '#00D4AA', weight: 3, opacity: 0.9, dashArray: '12, 8' }} />
         )}
       </MapContainer>
-
-      {/* Legend */}
-      <div className="absolute bottom-14 right-4 bg-bg-surface/90 backdrop-blur-sm border border-border-subtle rounded-lg p-3 text-xs z-[400]">
-        {[['Low (0-30)', '#00C896'], ['Medium (31-60)', '#F59E0B'], ['High (61-80)', '#F97316'], ['Critical (81+)', '#EF4444']].map(([label, color]) => (
-          <div key={label} className="flex items-center gap-2 mb-1">
-            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
-            <span className="text-text-muted">{label}</span>
-          </div>
-        ))}
-      </div>
     </div>
   )
 }

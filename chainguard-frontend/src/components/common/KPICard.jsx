@@ -1,42 +1,66 @@
-export default function KPICard({ title, value, subtitle, trend, icon: Icon, color = 'blue', isLoading }) {
+import CountUp from 'react-countup'
+import { motion } from 'framer-motion'
+
+export default function KPICard({ title, value, subtitle, trend, icon: Icon, color = 'blue', isLoading, suffix = '', prefix = '', decimals = 0 }) {
   const colorMap = {
-    blue:    { icon: 'bg-blue-900 text-blue-400',    border: 'border-blue-900/40' },
-    success: { icon: 'bg-green-900 text-green-400',  border: 'border-green-900/40' },
-    danger:  { icon: 'bg-red-900 text-red-400',      border: 'border-red-900/40' },
-    warning: { icon: 'bg-amber-900 text-amber-400',  border: 'border-amber-900/40' },
+    blue:    { icon: '#00B4D8', border: 'rgba(0,180,216,0.2)', glow: 'rgba(0,180,216,0.1)' },
+    success: { icon: '#00E676', border: 'rgba(0,230,118,0.2)', glow: 'rgba(0,230,118,0.1)' },
+    danger:  { icon: '#FF5252', border: 'rgba(255,82,82,0.2)', glow: 'rgba(255,82,82,0.1)' },
+    warning: { icon: '#FFB300', border: 'rgba(255,179,0,0.2)', glow: 'rgba(255,179,0,0.1)' },
+    teal:    { icon: '#00D4AA', border: 'rgba(0,212,170,0.2)', glow: 'rgba(0,212,170,0.1)' },
   }
   const c = colorMap[color] || colorMap.blue
 
   if (isLoading) {
     return (
       <div className="card p-5 flex flex-col gap-3">
-        <div className="shimmer-bg h-4 w-24 rounded" />
-        <div className="shimmer-bg h-8 w-16 rounded" />
         <div className="shimmer-bg h-3 w-20 rounded" />
+        <div className="shimmer-bg h-7 w-16 rounded" />
+        <div className="shimmer-bg h-3 w-24 rounded" />
       </div>
     )
   }
 
+  const numValue = typeof value === 'string' ? parseFloat(value.replace(/[^0-9.]/g, '')) : value
+  const isNumber = !isNaN(numValue) && isFinite(numValue)
   const trendPositive = trend > 0
+
   return (
-    <div className={`card p-5 border ${c.border} flex flex-col gap-2 hover:border-border-subtle transition-colors`}>
+    <motion.div
+      whileHover={{ borderColor: 'var(--border-accent)', boxShadow: `0 0 20px ${c.glow}` }}
+      className="card p-5 flex flex-col gap-2 transition-all cursor-default"
+      style={{ borderColor: c.border }}
+    >
       <div className="flex items-start justify-between">
-        <p className="text-text-muted text-xs font-medium uppercase tracking-wider">{title}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-wider font-display"
+          style={{ color: 'var(--text-secondary)' }}>{title}</p>
         {Icon && (
-          <div className={`p-2 rounded-lg ${c.icon}`}>
+          <div className="p-2 rounded-lg" style={{ background: `${c.icon}15`, color: c.icon }}>
             <Icon className="w-4 h-4" />
           </div>
         )}
       </div>
-      <p className="text-2xl font-bold text-text-primary tabular-nums">{value}</p>
+
+      <div className="text-2xl font-bold font-display tabular-nums" style={{ color: 'var(--text-primary)' }}>
+        {isNumber ? (
+          <CountUp end={numValue} duration={1.5} decimals={decimals}
+            prefix={prefix} suffix={suffix} separator="," useEasing={true} />
+        ) : value}
+      </div>
+
       <div className="flex items-center gap-2">
-        {subtitle && <p className="text-text-muted text-xs">{subtitle}</p>}
+        {subtitle && <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{subtitle}</p>}
         {trend !== undefined && (
-          <span className={`text-xs font-medium ${trendPositive ? 'text-chainguard-emerald' : 'text-chainguard-danger'}`}>
+          <motion.span
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-xs font-medium font-mono"
+            style={{ color: trendPositive ? 'var(--status-safe)' : 'var(--status-danger)' }}
+          >
             {trendPositive ? '↑' : '↓'} {Math.abs(trend)}%
-          </span>
+          </motion.span>
         )}
       </div>
-    </div>
+    </motion.div>
   )
 }

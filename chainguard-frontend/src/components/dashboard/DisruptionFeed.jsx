@@ -1,79 +1,103 @@
-import { AlertTriangle, Cloud, Truck, Flag, Shield, Zap } from 'lucide-react'
-import { formatDistanceToNow } from 'date-fns'
+import { motion, AnimatePresence } from 'framer-motion'
+import { AlertTriangle, Zap, Cloud, Truck, Flag, Construction } from 'lucide-react'
+import { useTypewriter } from '../../hooks/useTypewriter'
+import { useDisruptions } from '../../hooks/useDisruptions'
+
+const SEVERITY_CONFIG = {
+  critical: { color: 'var(--status-critical)', bg: 'var(--status-crit-bg)', label: 'CRIT' },
+  high:     { color: 'var(--status-danger)',   bg: 'var(--status-danger-bg)', label: 'HIGH' },
+  medium:   { color: 'var(--status-warn)',     bg: 'var(--status-warn-bg)', label: 'MED' },
+  low:      { color: 'var(--status-safe)',     bg: 'var(--status-safe-bg)', label: 'LOW' },
+}
 
 const TYPE_ICONS = {
-  weather:     { icon: Cloud,         color: 'text-blue-400',   bg: 'bg-blue-900/40'  },
-  traffic:     { icon: Truck,         color: 'text-amber-400',  bg: 'bg-amber-900/40' },
-  news:        { icon: AlertTriangle, color: 'text-red-400',    bg: 'bg-red-900/40'   },
-  festival:    { icon: Flag,          color: 'text-purple-400', bg: 'bg-purple-900/40'},
-  checkpost:   { icon: Shield,        color: 'text-cyan-400',   bg: 'bg-cyan-900/40'  },
-  operational: { icon: Zap,           color: 'text-orange-400', bg: 'bg-orange-900/40'},
+  weather: Cloud, traffic: Truck, news: Flag,
+  festival: Flag, checkpost: Construction, operational: Zap,
 }
 
-const SEV_COLORS = {
-  low:      'border-green-700 text-green-400',
-  medium:   'border-amber-700 text-amber-400',
-  high:     'border-orange-700 text-orange-400',
-  critical: 'border-red-700 text-red-400',
+function timeAgo(date) {
+  if (!date) return ''
+  const diff = Date.now() - new Date(date).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'Just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
 }
 
-export default function DisruptionFeed({ disruptions = [], loading }) {
+function AlertTitle({ text, animate }) {
+  const { displayed } = useTypewriter(text, 25, 0)
+  return <span>{animate ? displayed : text}</span>
+}
+
+function AlertItem({ alert, index, isNew }) {
+  const sev = SEVERITY_CONFIG[alert.severity] || SEVERITY_CONFIG.medium
+  const Icon = TYPE_ICONS[alert.type] || AlertTriangle
+  const isCritical = alert.severity === 'critical'
+
   return (
-    <div className="card flex flex-col h-full">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border-subtle">
-        <h3 className="font-semibold text-sm text-text-primary">Live Disruption Feed</h3>
-        <span className="text-xs text-text-muted">{disruptions.length} active</span>
+    <motion.div
+      layout
+      initial={isNew ? { y: -40, opacity: 0 } : false}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ opacity: 0, height: 0 }}
+      transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+      className="flex gap-3 p-3 rounded-lg transition-colors"
+      style={{
+        background: isCritical ? 'rgba(255,23,68,0.04)' : 'var(--bg-elevated)',
+        borderLeft: `3px solid ${sev.color}`,
+        animation: isCritical ? 'glow-pulse 2s ease-in-out infinite' : undefined,
+      }}
+    >
+      <motion.div initial={{ rotate: 0 }} animate={{ rotate: 360 }} transition={{ duration: 0.4 }}
+        className="shrink-0 mt-0.5">
+        <Icon className="w-4 h-4" style={{ color: sev.color }} />
+      </motion.div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-sm font-semibold font-display truncate" style={{ color: 'var(--text-primary)' }}>
+            <AlertTitle text={alert.title} animate={isNew && index < 3} />
+          </p>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold shrink-0"
+            style={{ background: sev.bg, color: sev.color }}>{sev.label}</span>
+        </div>
+        <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-secondary)' }}>{alert.description}</p>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span className="text-[10px] font-mono" style={{ color: 'var(--text-faint)' }}>{timeAgo(alert.detected_at)}</span>
+          {alert.affected_cities?.slice(0, 3).map(city => (
+            <span key={city} className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: 'var(--bg-interactive)', color: 'var(--text-secondary)' }}>{city}</span>
+          ))}
+        </div>
       </div>
-      <div className="flex-1 overflow-y-auto divide-y divide-border-subtle">
-        {loading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="p-4 flex gap-3">
-              <div className="shimmer-bg w-8 h-8 rounded-lg shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="shimmer-bg h-3 w-3/4 rounded" />
-                <div className="shimmer-bg h-3 w-1/2 rounded" />
-              </div>
-            </div>
-          ))
-        ) : disruptions.length === 0 ? (
-          <div className="flex items-center justify-center py-12 text-text-muted text-sm">
-            No active disruptions
-          </div>
-        ) : (
-          disruptions.map(d => {
-            const typeStyle = TYPE_ICONS[d.type] || TYPE_ICONS.operational
-            const Icon = typeStyle.icon
-            const sevColor = SEV_COLORS[d.severity] || SEV_COLORS.medium
-            return (
-              <div key={d.id} className="p-4 flex gap-3 hover:bg-bg-elevated transition-colors">
-                <div className={`p-2 rounded-lg shrink-0 ${typeStyle.bg}`}>
-                  <Icon className={`w-4 h-4 ${typeStyle.color}`} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-text-primary text-xs font-medium leading-snug">{d.title}</p>
-                    <span className={`shrink-0 text-[10px] font-bold uppercase border rounded px-1.5 py-0.5 ${sevColor}`}>
-                      {d.severity}
-                    </span>
-                  </div>
-                  <p className="text-text-muted text-[11px] mt-1 line-clamp-2">{d.description}</p>
-                  {d.affected_cities && (
-                    <div className="flex gap-1 mt-1.5 flex-wrap">
-                      {(Array.isArray(d.affected_cities) ? d.affected_cities : []).slice(0, 3).map(c => (
-                        <span key={c} className="text-[10px] bg-bg-primary border border-border-subtle rounded px-1.5 py-0.5 text-text-muted">{c}</span>
-                      ))}
-                    </div>
-                  )}
-                  {d.detected_at && (
-                    <p className="text-text-muted text-[10px] mt-1">
-                      {formatDistanceToNow(new Date(d.detected_at), { addSuffix: true })}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )
-          })
-        )}
+    </motion.div>
+  )
+}
+
+export default function DisruptionFeed() {
+  const { data: disruptions } = useDisruptions()
+  const active = disruptions.filter(d => d.is_active).slice(0, 8)
+
+  return (
+    <div className="card flex flex-col" style={{ maxHeight: 480 }}>
+      <div className="px-4 py-3 flex items-center justify-between shrink-0"
+        style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+        <h3 className="font-display font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>
+          Disruption Feed
+        </h3>
+        <div className="flex items-center gap-1.5">
+          <span className="live-dot w-2 h-2 rounded-full" style={{ background: 'var(--status-danger)' }} />
+          <span className="text-[10px] font-bold" style={{ color: 'var(--status-danger)' }}>LIVE</span>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto p-3 space-y-2">
+        <AnimatePresence>
+          {active.length === 0 ? (
+            <p className="text-center py-8 text-sm" style={{ color: 'var(--text-faint)' }}>No active disruptions</p>
+          ) : active.map((alert, i) => (
+            <AlertItem key={alert.id} alert={alert} index={i} isNew={i < 3} />
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   )

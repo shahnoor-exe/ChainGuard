@@ -1,9 +1,53 @@
-import { useState, useEffect, useCallback } from 'react'
+/*
+  CHAINGUARD — Complete Integration Checklist
+
+  ✅ AUTH SETUP REQUIRED BEFORE RUNNING:
+  1. Run schema.sql in Supabase SQL Editor (includes user_profiles + RLS)
+  2. In Supabase Dashboard → Authentication → Email Templates:
+     Disable email confirmation for demo (Settings → Auth → Disable email confirm)
+  3. Add SUPABASE_SERVICE_ROLE_KEY to backend .env
+  4. Run: npm run create-users (in chainguard-backend/)
+  5. Run: npm run seed (seeds shipment/supplier data)
+
+  ✅ ENVIRONMENT VARIABLES CHECKLIST:
+  Frontend (.env.local):
+    VITE_API_BASE_URL, VITE_ML_BASE_URL,
+    VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY
+
+  Backend (.env):
+    SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY,
+    ML_ENGINE_URL, PORT, NODE_ENV
+
+  ML Engine (.env):
+    OPENWEATHER_API_KEY, NEWS_API_KEY, PORT
+
+  ✅ DEMO ACCOUNTS (all password: Demo@123):
+    admin@chainguard.demo     → Full Admin
+    manager@chainguard.demo   → Logistics Manager
+    warehouse@chainguard.demo → Mumbai Warehouse
+    driver@chainguard.demo    → Driver (SH-1001)
+    analyst@chainguard.demo   → Business Analyst
+    ceo@chainguard.demo       → Executive Summary
+
+  ✅ STARTUP ORDER:
+  Terminal 1: cd chainguard-ml && uvicorn main:app --reload --port 8000
+  Terminal 2: cd chainguard-backend && npm run dev
+  Terminal 3: cd chainguard-frontend && npm run dev
+  Open: http://localhost:5173
+*/
+
+import { useState, useCallback } from 'react'
+import { AnimatePresence } from 'framer-motion'
 import { Menu } from 'lucide-react'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import { AppProvider, useApp } from './context/AppContext'
+import LoginScreen from './components/auth/LoginScreen'
+import FullScreenLoader from './components/common/FullScreenLoader'
 import Sidebar from './components/layout/Sidebar'
 import TopBar from './components/layout/TopBar'
 import AlertToastContainer from './components/common/AlertToast'
+import { PageTransition } from './components/common/PageTransition'
+import AccessDenied from './components/common/AccessDenied'
 import DashboardView from './components/dashboard/DashboardView'
 import MapView from './components/map/MapView'
 import ShipmentsView from './components/shipments/ShipmentsView'
@@ -11,147 +55,119 @@ import RouteOptimizerView from './components/routes/RouteOptimizerView'
 import SuppliersView from './components/suppliers/SuppliersView'
 import DigitalTwinView from './components/digital-twin/DigitalTwinView'
 import CarbonView from './components/carbon/CarbonView'
+import AnalyticsView from './components/analytics/AnalyticsView'
+import AdminPanel from './components/admin/AdminPanel'
+import WarehouseDashboard from './components/roles/WarehouseDashboard'
+import DriverView from './components/roles/DriverView'
+import ExecutiveDashboard from './components/roles/ExecutiveDashboard'
 import { useDisruptions } from './hooks/useDisruptions'
-import { checkApiHealth, checkMlHealth } from './services/api'
+import { ROLE_VIEWS } from './config'
 
 const VIEW_TITLES = {
-  dashboard:    'Operations Dashboard',
-  map:          'Live Shipment Map',
-  shipments:    'Shipment Management',
-  optimizer:    'Route Optimizer',
-  suppliers:    'Supplier Risk',
-  'digital-twin': 'Digital Twin — Supply Chain Graph',
-  carbon:       'Carbon Footprint',
+  dashboard:          'Operations Dashboard',
+  map:                'Live Shipment Map',
+  shipments:          'Shipment Management',
+  optimizer:          'Route Optimizer',
+  suppliers:          'Supplier Risk',
+  'digital-twin':     'Digital Twin — Supply Chain Graph',
+  carbon:             'Carbon Footprint',
+  analytics:          'Business Analytics',
+  admin:              'Admin Panel',
+  warehouse_dashboard:'My Warehouse',
+  my_shipments:       'My Shipments',
+  executive_dashboard:'Executive Overview',
+  driver_view:        'My Delivery',
 }
 
-// ── Loading Screen ─────────────────────────────────────────
-const MESSAGES = [
-  'Connecting to Supply Chain Intelligence Network...',
-  'Waking up ML Engine...',
-  'Loading shipment data...',
-  'Calibrating risk models...',
-]
+function InnerApp() {
+  const { user, loading: authLoading } = useAuth()
+  const { sidebarOpen, setSidebarOpen, selectedRoute } = useApp()
+  const { data: disruptions } = useDisruptions()
+  const [ready, setReady] = useState(false)
 
-function LoadingScreen({ onReady }) {
-  const [msgIdx, setMsgIdx]     = useState(0)
-  const [progress, setProgress] = useState(0)
-  const [failed, setFailed]     = useState(false)
+  const allowedViews = user ? (ROLE_VIEWS[user.role] || ROLE_VIEWS.logistics_manager) : []
+  const [activeView, setActiveView] = useState(null)
 
-  useEffect(() => {
-    const msgTimer = setInterval(() => setMsgIdx(i => (i + 1) % MESSAGES.length), 2200)
-    const progTimer = setInterval(() => setProgress(p => Math.min(p + 3, 80)), 250)
+  // Set default view when user loads
+  const currentView = activeView && allowedViews.includes(activeView)
+    ? activeView
+    : allowedViews[0] || 'dashboard'
 
-    const timeout = setTimeout(() => {
-      clearInterval(msgTimer); clearInterval(progTimer)
-      setFailed(true)
-    }, 15000)
+  const handleNavigate = useCallback((view, preset) => {
+    setActiveView(view)
+  }, [])
 
-    Promise.allSettled([checkApiHealth(), checkMlHealth()]).then(results => {
-      clearTimeout(timeout)
-      clearInterval(msgTimer); clearInterval(progTimer)
-      setProgress(100)
-      setTimeout(onReady, 600)
-    })
+  // Auth loading
+  if (authLoading) {
+    return <FullScreenLoader onReady={() => {}} />
+  }
 
-    return () => { clearInterval(msgTimer); clearInterval(progTimer); clearTimeout(timeout) }
-  }, [onReady])
+  // Not logged in
+  if (!user) {
+    return <LoginScreen />
+  }
 
-  if (failed) {
+  // Driver → fullscreen
+  if (user.role === 'driver') {
     return (
-      <div className="fixed inset-0 bg-bg-primary flex flex-col items-center justify-center gap-6">
-        <div className="text-center">
-          <p className="text-4xl mb-3">⚠️</p>
-          <p className="text-text-primary font-bold text-xl">Backend offline</p>
-          <p className="text-text-muted text-sm mt-2">Showing demo data — all features still available</p>
-        </div>
-        <button onClick={onReady} className="btn-primary px-8 py-3 text-base justify-center">
-          Enter Dashboard
-        </button>
-      </div>
+      <>
+        <DriverView />
+        <AlertToastContainer />
+      </>
     )
   }
 
-  return (
-    <div className="fixed inset-0 bg-bg-primary flex flex-col items-center justify-center gap-8">
-      <div className="text-center space-y-3">
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <div className="w-10 h-10 bg-chainguard-emerald rounded-lg flex items-center justify-center animate-pulse">
-            <span className="text-black font-bold text-lg">C</span>
-          </div>
-          <div>
-            <p className="text-text-primary font-bold text-2xl tracking-tight">ChainGuard</p>
-            <p className="text-chainguard-emerald text-xs tracking-widest">SUPPLY CHAIN INTELLIGENCE</p>
-          </div>
-        </div>
-        <p className="text-text-muted text-sm h-5">{MESSAGES[msgIdx]}</p>
-      </div>
+  // App loading
+  if (!ready) {
+    return <FullScreenLoader onReady={() => setReady(true)} />
+  }
 
-      <div className="w-72">
-        <div className="h-1 bg-bg-elevated rounded-full overflow-hidden">
-          <div
-            className="h-full bg-chainguard-emerald rounded-full transition-all duration-300 ease-out"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <p className="text-text-muted text-xs text-center mt-2 tabular-nums">{progress}%</p>
-      </div>
-    </div>
-  )
-}
-
-// ── Inner App (needs context) ──────────────────────────────
-function InnerApp() {
-  const [activeView, setActiveView]   = useState('dashboard')
-  const [routePreset, setRoutePreset] = useState({})
-  const [ready, setReady]             = useState(false)
-  const { sidebarOpen, setSidebarOpen, selectedRoute } = useApp()
-  const { data: disruptions } = useDisruptions()
-
-  const handleNavigate = useCallback((view, preset = {}) => {
-    setActiveView(view)
-    if (preset) setRoutePreset(preset)
-  }, [])
-
-  if (!ready) return <LoadingScreen onReady={() => setReady(true)} />
+  function renderView() {
+    if (!allowedViews.includes(currentView)) {
+      return <AccessDenied onNavigate={handleNavigate} />
+    }
+    switch (currentView) {
+      case 'dashboard':           return <DashboardView selectedRoute={selectedRoute} />
+      case 'map':                 return <MapView selectedRoute={selectedRoute} />
+      case 'shipments':           return <ShipmentsView onNavigate={handleNavigate} />
+      case 'my_shipments':        return <ShipmentsView onNavigate={handleNavigate} />
+      case 'optimizer':           return <RouteOptimizerView />
+      case 'suppliers':           return <SuppliersView />
+      case 'digital-twin':        return <DigitalTwinView />
+      case 'carbon':              return <CarbonView />
+      case 'analytics':           return <AnalyticsView />
+      case 'admin':               return <AdminPanel />
+      case 'warehouse_dashboard': return <WarehouseDashboard />
+      case 'executive_dashboard': return <ExecutiveDashboard />
+      default:                    return <DashboardView selectedRoute={selectedRoute} />
+    }
+  }
 
   return (
-    <div className="flex h-screen bg-bg-primary overflow-hidden">
-      {/* Sidebar */}
-      <Sidebar
-        activeView={activeView}
-        onNavigate={handleNavigate}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
+    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg-void)' }}>
+      <Sidebar activeView={currentView} onNavigate={handleNavigate}
+        open={sidebarOpen} onClose={() => setSidebarOpen(false)}
+        allowedViews={allowedViews} />
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0 md:ml-64">
-        {/* TopBar */}
+      <div className="flex-1 flex flex-col min-w-0 main-content" style={{ marginLeft: '240px' }}>
         <div className="flex items-center">
-          <button
-            onClick={() => setSidebarOpen(o => !o)}
-            className="md:hidden p-3 text-text-muted hover:text-text-primary"
-          >
+          <button onClick={() => setSidebarOpen(o => !o)}
+            className="md:hidden p-3 cursor-pointer" style={{ color: 'var(--text-faint)', background: 'none', border: 'none' }}>
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex-1">
-            <TopBar
-              title={VIEW_TITLES[activeView]}
+            <TopBar title={VIEW_TITLES[currentView] || 'ChainGuard'}
               disruptionCount={disruptions.filter(d => d.is_active).length}
-              onRefresh={() => window.location.reload()}
-            />
+              onRefresh={() => window.location.reload()} />
           </div>
         </div>
 
-        {/* View area */}
         <main className="flex-1 overflow-y-auto p-5">
-          {activeView === 'dashboard'     && <DashboardView selectedRoute={selectedRoute} />}
-          {activeView === 'map'           && <MapView selectedRoute={selectedRoute} />}
-          {activeView === 'shipments'     && <ShipmentsView onNavigate={handleNavigate} />}
-          {activeView === 'optimizer'     && <RouteOptimizerView initialOrigin={routePreset.origin} initialDest={routePreset.destination} />}
-          {activeView === 'suppliers'     && <SuppliersView />}
-          {activeView === 'digital-twin'  && <DigitalTwinView />}
-          {activeView === 'carbon'        && <CarbonView />}
+          <AnimatePresence mode="wait">
+            <PageTransition pageKey={currentView}>
+              {renderView()}
+            </PageTransition>
+          </AnimatePresence>
         </main>
       </div>
 
@@ -162,8 +178,10 @@ function InnerApp() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <InnerApp />
-    </AppProvider>
+    <AuthProvider>
+      <AppProvider>
+        <InnerApp />
+      </AppProvider>
+    </AuthProvider>
   )
 }

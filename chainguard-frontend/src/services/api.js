@@ -1,5 +1,6 @@
 import axios from 'axios'
 import { API_BASE, ML_BASE } from '../config'
+import { supabase } from './supabaseClient'
 
 // ── Main API (Node.js backend) ────────────────────────────
 const api = axios.create({ baseURL: API_BASE, timeout: 10000 })
@@ -7,12 +8,31 @@ const api = axios.create({ baseURL: API_BASE, timeout: 10000 })
 // ── ML Engine API ─────────────────────────────────────────
 const mlApi = axios.create({ baseURL: ML_BASE, timeout: 15000 })
 
-// Interceptors for consistent error logging
+// ── Auth token interceptor ────────────────────────────────
+api.interceptors.request.use(async (config) => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.access_token) {
+      config.headers.Authorization = `Bearer ${session.access_token}`
+    }
+  } catch (e) { /* ignore auth errors during request */ }
+  return config
+})
+
+// ── Response interceptors ─────────────────────────────────
 const errorHandler = (err) => {
   console.error('[API Error]', err?.response?.data?.message || err.message)
   return Promise.reject(err)
 }
-api.interceptors.response.use(r => r, errorHandler)
+
+api.interceptors.response.use(r => r, async (error) => {
+  if (error.response?.status === 401) {
+    await supabase.auth.signOut()
+    window.location.reload()
+  }
+  return Promise.reject(error)
+})
+
 mlApi.interceptors.response.use(r => r, errorHandler)
 
 // ── Dashboard ─────────────────────────────────────────────

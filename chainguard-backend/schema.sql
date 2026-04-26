@@ -92,6 +92,127 @@ CREATE INDEX IF NOT EXISTS idx_disruptions_active ON disruptions(is_active);
 CREATE INDEX IF NOT EXISTS idx_alerts_shipment ON alerts_log(shipment_id);
 
 -- ============================================================
+-- 6. User Profiles with Role-Based Access Control
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS user_profiles (
+  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email       TEXT NOT NULL,
+  full_name   TEXT NOT NULL,
+  role        TEXT NOT NULL DEFAULT 'logistics_manager'
+              CHECK (role IN (
+                'super_admin','logistics_manager',
+                'warehouse_operator','driver','analyst','executive'
+              )),
+  warehouse_city TEXT,
+  assigned_shipment_id UUID,
+  company_name TEXT DEFAULT 'ChainGuard Demo Co.',
+  avatar_initials TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RLS for user_profiles
+ALTER TABLE user_profiles ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can read own profile"
+  ON user_profiles FOR SELECT TO authenticated
+  USING (id = auth.uid());
+
+CREATE POLICY "Users can update own profile"
+  ON user_profiles FOR UPDATE TO authenticated
+  USING (id = auth.uid());
+
+CREATE POLICY "Super admin reads all profiles"
+  ON user_profiles FOR SELECT TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM user_profiles
+      WHERE id = auth.uid() AND role = 'super_admin'
+    )
+  );
+
+-- RLS for shipments
+ALTER TABLE shipments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Manager and admin see all shipments"
+  ON shipments FOR SELECT TO authenticated
+  USING (
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+    IN ('super_admin','logistics_manager','analyst','executive')
+  );
+
+CREATE POLICY "Warehouse operator sees own city shipments"
+  ON shipments FOR SELECT TO authenticated
+  USING (
+    (SELECT role FROM user_profiles WHERE id = auth.uid()) = 'warehouse_operator'
+    AND (
+      origin_city = (SELECT warehouse_city FROM user_profiles WHERE id = auth.uid())
+      OR destination_city = (SELECT warehouse_city FROM user_profiles WHERE id = auth.uid())
+    )
+  );
+
+CREATE POLICY "Driver sees only assigned shipment"
+  ON shipments FOR SELECT TO authenticated
+  USING (
+    (SELECT role FROM user_profiles WHERE id = auth.uid()) = 'driver'
+    AND id = (SELECT assigned_shipment_id FROM user_profiles WHERE id = auth.uid())
+  );
+
+CREATE POLICY "Warehouse operator updates status"
+  ON shipments FOR UPDATE TO authenticated
+  USING (
+    (SELECT role FROM user_profiles WHERE id = auth.uid()) = 'warehouse_operator'
+  )
+  WITH CHECK (
+    (SELECT role FROM user_profiles WHERE id = auth.uid()) = 'warehouse_operator'
+  );
+
+CREATE POLICY "Manager full CRUD shipments"
+  ON shipments FOR ALL TO authenticated
+  USING (
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+    IN ('super_admin','logistics_manager')
+  );
+
+-- RLS for suppliers
+ALTER TABLE suppliers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Authorized roles see suppliers"
+  ON suppliers FOR SELECT TO authenticated
+  USING (
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+    IN ('super_admin','logistics_manager','analyst','executive')
+  );
+
+-- RLS for disruptions
+ALTER TABLE disruptions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "All authenticated read disruptions"
+  ON disruptions FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Manager and admin manage disruptions"
+  ON disruptions FOR ALL TO authenticated
+  USING (
+    (SELECT role FROM user_profiles WHERE id = auth.uid())
+    IN ('super_admin','logistics_manager')
+  );
+
+-- Demo credentials table
+CREATE TABLE IF NOT EXISTS demo_credentials (
+  role          TEXT PRIMARY KEY,
+  email         TEXT NOT NULL,
+  password      TEXT NOT NULL,
+  full_name     TEXT NOT NULL,
+  description   TEXT
+);
+
+INSERT INTO demo_credentials VALUES
+  ('super_admin',        'admin@chainguard.demo',     'Demo@123', 'Arjun Kumar',   'Full system access'),
+  ('logistics_manager',  'manager@chainguard.demo',   'Demo@123', 'Priya Sharma',  'All operations'),
+  ('warehouse_operator', 'warehouse@chainguard.demo', 'Demo@123', 'Rohit Patel',   'Mumbai warehouse'),
+  ('driver',             'driver@chainguard.demo',    'Demo@123', 'Suresh Kumar',  'Shipment SH-1001'),
+  ('analyst',            'analyst@chainguard.demo',   'Demo@123', 'Meera Iyer',    'Read-only analytics'),
+  ('executive',          'ceo@chainguard.demo',       'Demo@123', 'Vivek Mehta',   'Executive summary')
+ON CONFLICT (role) DO NOTHING;
+
+-- ============================================================
 -- IMPORTANT: After running this SQL, go to:
 --   Supabase Dashboard → Database → Replication
 -- and enable Realtime for: shipments, disruptions

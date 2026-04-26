@@ -81,7 +81,7 @@ const VIEW_TITLES = {
 
 function InnerApp() {
   const { user, loading: authLoading } = useAuth()
-  const { sidebarOpen, setSidebarOpen, selectedRoute } = useApp()
+  const { sidebarOpen, setSidebarOpen, selectedRoute, setUseMockData } = useApp()
   const { data: disruptions } = useDisruptions()
   const [ready, setReady] = useState(false)
 
@@ -99,7 +99,7 @@ function InnerApp() {
 
   // Auth loading
   if (authLoading) {
-    return <FullScreenLoader onReady={() => {}} />
+    return <FullScreenLoader onLoadComplete={() => {}} />
   }
 
   // Not logged in
@@ -119,7 +119,15 @@ function InnerApp() {
 
   // App loading
   if (!ready) {
-    return <FullScreenLoader onReady={() => setReady(true)} />
+    return (
+      <FullScreenLoader 
+        onLoadComplete={() => setReady(true)} 
+        onUseMockData={() => {
+          setUseMockData(true);
+          console.log('⚠️ Using mock data — backend cold starting');
+        }}
+      />
+    )
   }
 
   function renderView() {

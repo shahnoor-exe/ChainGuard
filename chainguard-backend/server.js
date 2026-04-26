@@ -18,7 +18,38 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ── Middleware ──────────────────────────────────────────────
-app.use(cors());                    // Allow all origins (prototype)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://chain-guard-olive.vercel.app',     // ← your ACTUAL Vercel URL
+  'https://chainguard.vercel.app',             // keep old one too
+  /\.vercel\.app$/,                            // allow ALL vercel preview URLs
+];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+    
+    const isAllowed = allowedOrigins.some(allowed => {
+      if (allowed instanceof RegExp) return allowed.test(origin);
+      return allowed === origin;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      console.log(`CORS blocked: ${origin}`);
+      callback(new Error(`CORS policy: origin ${origin} not allowed`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-requested-with'],
+}));
+
+// Handle OPTIONS preflight for all routes
+app.options('*', cors());
 app.use(express.json());            // Parse JSON bodies
 
 // ── Health Check ────────────────────────────────────────────

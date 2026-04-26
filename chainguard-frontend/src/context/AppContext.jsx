@@ -8,6 +8,7 @@ export function AppProvider({ children }) {
   const [activeAlerts, setActiveAlerts]         = useState([])
   const [sidebarOpen, setSidebarOpen]           = useState(true)
   const [toasts, setToasts]                     = useState([])
+  const [useMockData, setUseMockData]           = useState(false)
 
   const addToast = useCallback((msg, type = 'info') => {
     const id = Date.now()
@@ -25,6 +26,7 @@ export function AppProvider({ children }) {
       selectedRoute,    setSelectedRoute,
       activeAlerts,     setActiveAlerts,
       sidebarOpen,      setSidebarOpen,
+      useMockData,      setUseMockData,
       toasts,           addToast, removeToast,
     }}>
       {children}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { fetchShipments } from '../services/api'
 import mockShipments from '../data/mock_shipments.json'
 import { useApp } from '../context/AppContext'

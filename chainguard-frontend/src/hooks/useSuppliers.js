@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { fetchSuppliers } from '../services/api'
 import mockSuppliers from '../data/mock_suppliers.json'
 import { useApp } from '../context/AppContext'

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { fetchKPIs } from '../services/api'
 import mockKpis from '../data/mock_kpis.json'
 import { useApp } from '../context/AppContext'

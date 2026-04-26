@@ -36,7 +36,7 @@
   Open: http://localhost:5173
 */
 
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import { Menu } from 'lucide-react'
 import { AuthProvider, useAuth } from './context/AuthContext'

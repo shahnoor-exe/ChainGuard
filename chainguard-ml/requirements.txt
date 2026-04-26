@@ -1,13 +1,17 @@
-fastapi>=0.109.0
-uvicorn>=0.27.0
-python-dotenv>=1.0.0
-httpx>=0.26.0
-scikit-learn>=1.4.0
-xgboost>=2.0.3
-pandas>=2.1.4
-numpy>=1.26.3
-joblib>=1.3.2
-python-multipart>=0.0.6
-annotated-types>=0.6.0
-pydantic>=2.5.0
-starlette>=0.35.0
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+httpx==0.27.0
+python-dotenv==1.0.1
+requests==2.31.0
+
+# Lightweight ML — replaces heavy XGBoost + full sklearn pipelines
+scikit-learn==1.4.2
+numpy==1.26.4
+pandas==2.2.2
+
+# Remove spaCy entirely — use regex instead (saves ~250MB RAM)
+# spacy                  ← DELETED
+# en_core_web_sm         ← DELETED
+
+# Keep these
+python-dateutil==2.9.0

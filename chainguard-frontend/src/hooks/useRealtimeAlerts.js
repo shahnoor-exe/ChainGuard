@@ -24,6 +24,21 @@ export function useRealtimeAlerts() {
           `New disruption: ${newAlert.title} — ${newAlert.severity?.toUpperCase()}`,
           newAlert.severity === 'critical' ? 'error' : 'warning'
         )
+
+        // Trigger email notification for High/Critical disruptions
+        if (newAlert.severity === 'critical' || newAlert.severity === 'high') {
+          import('../services/notificationService').then(({ sendDisruptionEmail }) => {
+            sendDisruptionEmail({
+              shipment_code: 'MULTIPLE', // Disruption affects route/area
+              type: newAlert.type,
+              severity: newAlert.severity,
+              origin: 'SYSTEM',
+              destination: 'VARIOUS',
+              eta: 'Check Dashboard',
+              message: `${newAlert.title}: ${newAlert.description}`
+            });
+          });
+        }
       })
       .subscribe((status) => {
         if (status === 'SUBSCRIBED') {

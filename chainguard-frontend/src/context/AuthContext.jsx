@@ -3,10 +3,11 @@ import { supabase } from '../services/supabaseClient'
 
 const AuthContext = createContext(null)
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
+export function AuthProvider({ children, guestUser = null }) {
+  // If guestUser is injected (mock/offline mode), skip all Supabase calls entirely
+  const [user, setUser] = useState(guestUser || null)
   const [session, setSession] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(guestUser ? false : true)
   const [authError, setAuthError] = useState(null)
 
   // Map demo emails to their roles for reliable fallback
@@ -91,8 +92,10 @@ export function AuthProvider({ children }) {
     }
   }, [fetchProfile])
 
-  // Restore session on mount
+  // Restore session on mount — skipped in mock/offline mode (guestUser is set)
   useEffect(() => {
+    if (guestUser) return // offline mode — no Supabase calls
+
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setUserFromSession(s).finally(() => setLoading(false))
     })
@@ -108,7 +111,7 @@ export function AuthProvider({ children }) {
       }
     )
     return () => subscription.unsubscribe()
-  }, [setUserFromSession])
+  }, [setUserFromSession, guestUser])
 
   const login = useCallback(async (email, password) => {
     setAuthError(null)

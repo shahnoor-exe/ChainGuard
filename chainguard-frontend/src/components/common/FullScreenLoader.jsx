@@ -32,11 +32,11 @@ export default function FullScreenLoader({ onLoadComplete, onUseMockData }) {
       if (prog <= 85) setProgress(prog);
     }, 120);
 
-    // After 15 seconds, show warming message + start countdown
+    // After 8 seconds of no response, show warming message + start countdown
     const warmingTimer = setTimeout(() => {
       setIsWarming(true);
-      setCountdown(5); // Give 5 seconds extra countdown
-    }, 15000);
+      setCountdown(5); // 5 second countdown then load mock data
+    }, 8000);
 
     return () => {
       clearInterval(msgInterval);

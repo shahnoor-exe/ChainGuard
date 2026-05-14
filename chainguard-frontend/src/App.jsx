@@ -79,35 +79,60 @@ const VIEW_TITLES = {
   driver_view:        'My Delivery',
 }
 
-function InnerApp() {
-  const { user, loading: authLoading } = useAuth()
-  const { sidebarOpen, setSidebarOpen, selectedRoute, setUseMockData } = useApp()
-  const { data: disruptions } = useDisruptions()
-  const [ready, setReady] = useState(false)
+// ── Demo guest user injected when backend is unreachable ──────────────────────
+const GUEST_DEMO_USER = {
+  id: 'demo-guest',
+  email: 'manager@chainguard.demo',
+  full_name: 'Priya Sharma',
+  role: 'logistics_manager',
+  warehouse_city: null,
+  assigned_shipment_id: null,
+  avatar_initials: 'PS',
+  company_name: 'ChainGuard Demo Co.',
+}
 
-  const allowedViews = user ? (ROLE_VIEWS[user.role] || ROLE_VIEWS.logistics_manager) : []
+// ── Inner app — only mounts after loader is gone ──────────────────────────────
+function InnerApp({ guestUser = null }) {
+  const authCtx = useAuth()
+  // In mock/offline mode, authLoading may stay true forever (Supabase unreachable).
+  // Use guestUser to bypass that.
+  const user = guestUser || authCtx.user
+  const authLoading = guestUser ? false : authCtx.loading
+
+  const { sidebarOpen, setSidebarOpen, selectedRoute } = useApp()
+  const { data: disruptions = [] } = useDisruptions()
   const [activeView, setActiveView] = useState(null)
 
-  // Set default view when user loads
+  const allowedViews = user ? (ROLE_VIEWS[user.role] || ROLE_VIEWS.logistics_manager) : []
   const currentView = activeView && allowedViews.includes(activeView)
     ? activeView
     : allowedViews[0] || 'dashboard'
 
-  const handleNavigate = useCallback((view, preset) => {
+  const handleNavigate = useCallback((view) => {
     setActiveView(view)
   }, [])
 
-  // Auth loading
+  // Still waiting for Supabase (only in live mode, guestUser bypasses this)
   if (authLoading) {
-    return null; // Parent loader handles this now
+    return (
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        height: '100vh', background: 'var(--bg-void)',
+        color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)',
+        fontSize: '13px', flexDirection: 'column', gap: '12px'
+      }}>
+        <div style={{ width: 32, height: 32, border: '2px solid var(--accent-primary)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        Verifying session...
+      </div>
+    )
   }
 
-  // Not logged in
+  // Not logged in and no guest user — show login
   if (!user) {
     return <LoginScreen />
   }
 
-  // Driver → fullscreen
+  // Driver → fullscreen mobile view
   if (user.role === 'driver') {
     return (
       <>
@@ -116,8 +141,6 @@ function InnerApp() {
       </>
     )
   }
-
-  // App loading is also handled by parent loader now
 
   function renderView() {
     if (!allowedViews.includes(currentView)) {
@@ -154,7 +177,7 @@ function InnerApp() {
           </button>
           <div className="flex-1">
             <TopBar title={VIEW_TITLES[currentView] || 'ChainGuard'}
-              disruptionCount={disruptions.filter(d => d.is_active).length}
+              disruptionCount={(disruptions || []).filter(d => d.is_active).length}
               onRefresh={() => window.location.reload()} />
           </div>
         </div>
@@ -173,49 +196,66 @@ function InnerApp() {
   )
 }
 
+// ── Root App — manages loader + decides live vs mock mode ─────────────────────
 export default function App() {
-  const [showLoader, setShowLoader]   = useState(true);
-  const [useMockData, setUseMockData] = useState(false);
-  const loaderDismissed               = useRef(false);
+  const [showLoader, setShowLoader] = useState(true)
+  const [useMockData, setUseMockData] = useState(false)
+  const loaderDismissed = useRef(false)
 
+  // ── NUCLEAR FALLBACK: after 25s force-open dashboard with mock data ─────────
+  // This runs even if FullScreenLoader callbacks never fire (safety net)
   useEffect(() => {
     const nuclear = setTimeout(() => {
       if (!loaderDismissed.current) {
-        console.warn('[App] Nuclear timeout fired — forcing dashboard open');
-        loaderDismissed.current = true;
-        setUseMockData(true);
-        setShowLoader(false);
+        console.warn('[App] Nuclear timeout fired — forcing dashboard open with mock data')
+        loaderDismissed.current = true
+        setUseMockData(true)
+        setShowLoader(false)
       }
-    }, 25000); // 25 seconds absolute maximum
+    }, 25000)
+    return () => clearTimeout(nuclear)
+  }, [])
 
-    return () => clearTimeout(nuclear);
-  }, []);
-
-  const handleLoadComplete = () => {
+  const handleLoadComplete = useCallback(() => {
     if (!loaderDismissed.current) {
-      loaderDismissed.current = true;
-      setShowLoader(false);
+      loaderDismissed.current = true
+      setShowLoader(false)
     }
-  };
+  }, [])
 
-  const handleUseMockData = () => {
-    setUseMockData(true);
-  };
+  const handleUseMockData = useCallback(() => {
+    setUseMockData(true)
+  }, [])
 
+  // ── Show loader until it fires onLoadComplete ──────────────────────────────
   if (showLoader) {
     return (
       <FullScreenLoader
         onLoadComplete={handleLoadComplete}
         onUseMockData={handleUseMockData}
       />
-    );
+    )
   }
 
+  // ── MOCK MODE: backend is asleep — run 100% offline with demo data ──────────
+  // We skip AuthProvider entirely to avoid Supabase hanging the app.
+  // We inject GUEST_DEMO_USER so InnerApp always has a user to render.
+  if (useMockData) {
+    return (
+      <AuthProvider guestUser={GUEST_DEMO_USER}>
+        <AppProvider useMockData={true}>
+          <InnerApp guestUser={GUEST_DEMO_USER} />
+        </AppProvider>
+      </AuthProvider>
+    )
+  }
+
+  // ── LIVE MODE: backend is up — use real auth + real data ───────────────────
   return (
     <AuthProvider>
-      <AppProvider useMockData={useMockData}>
+      <AppProvider useMockData={false}>
         <InnerApp />
       </AppProvider>
     </AuthProvider>
-  );
+  )
 }

@@ -79,16 +79,170 @@ const VIEW_TITLES = {
   driver_view:        'My Delivery',
 }
 
-// ── Demo guest user injected when backend is unreachable ──────────────────────
-const GUEST_DEMO_USER = {
-  id: 'demo-guest',
-  email: 'manager@chainguard.demo',
-  full_name: 'Priya Sharma',
-  role: 'logistics_manager',
-  warehouse_city: null,
-  assigned_shipment_id: null,
-  avatar_initials: 'PS',
-  company_name: 'ChainGuard Demo Co.',
+// ── All 6 demo personas — used for offline RBAC demo ─────────────────────────
+const DEMO_PERSONAS = [
+  {
+    id: 'demo-admin',
+    email: 'admin@chainguard.demo',
+    full_name: 'Arjun Kumar',
+    role: 'super_admin',
+    avatar_initials: 'AK',
+    warehouse_city: null,
+    assigned_shipment_id: null,
+    company_name: 'ChainGuard Demo Co.',
+    emoji: '🔴', label: 'Admin',
+  },
+  {
+    id: 'demo-manager',
+    email: 'manager@chainguard.demo',
+    full_name: 'Priya Sharma',
+    role: 'logistics_manager',
+    avatar_initials: 'PS',
+    warehouse_city: null,
+    assigned_shipment_id: null,
+    company_name: 'ChainGuard Demo Co.',
+    emoji: '🟢', label: 'Manager',
+  },
+  {
+    id: 'demo-warehouse',
+    email: 'warehouse@chainguard.demo',
+    full_name: 'Rohit Patel',
+    role: 'warehouse_operator',
+    avatar_initials: 'RP',
+    warehouse_city: 'Mumbai',
+    assigned_shipment_id: null,
+    company_name: 'ChainGuard Demo Co.',
+    emoji: '🟡', label: 'Warehouse',
+  },
+  {
+    id: 'demo-driver',
+    email: 'driver@chainguard.demo',
+    full_name: 'Suresh Kumar',
+    role: 'driver',
+    avatar_initials: 'SK',
+    warehouse_city: null,
+    assigned_shipment_id: 'SH-1001',
+    company_name: 'ChainGuard Demo Co.',
+    emoji: '🚛', label: 'Driver',
+  },
+  {
+    id: 'demo-analyst',
+    email: 'analyst@chainguard.demo',
+    full_name: 'Meera Iyer',
+    role: 'analyst',
+    avatar_initials: 'MI',
+    warehouse_city: null,
+    assigned_shipment_id: null,
+    company_name: 'ChainGuard Demo Co.',
+    emoji: '📊', label: 'Analyst',
+  },
+  {
+    id: 'demo-ceo',
+    email: 'ceo@chainguard.demo',
+    full_name: 'Vivek Mehta',
+    role: 'executive',
+    avatar_initials: 'VM',
+    warehouse_city: null,
+    assigned_shipment_id: null,
+    company_name: 'ChainGuard Demo Co.',
+    emoji: '👔', label: 'Executive',
+  },
+]
+
+const ROLE_COLORS = {
+  super_admin:        '#FF5252',
+  logistics_manager:  '#00E676',
+  warehouse_operator: '#FFB300',
+  driver:             '#60A5FA',
+  analyst:            '#00B4D8',
+  executive:          '#AB47BC',
+}
+
+// ── Floating role-switcher panel (only shown in mock/demo mode) ───────────────
+function DemoRoleSwitcher({ currentPersona, onSwitch }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div style={{
+      position: 'fixed', bottom: 20, right: 20, zIndex: 99999,
+      display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8,
+    }}>
+      {/* Expanded panel */}
+      {open && (
+        <div style={{
+          background: 'rgba(13,17,23,0.97)',
+          border: '1px solid rgba(0,212,170,0.3)',
+          borderRadius: 12,
+          padding: '12px 14px',
+          backdropFilter: 'blur(16px)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.6)',
+          minWidth: 210,
+        }}>
+          <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
+                      color: '#FFB300', margin: '0 0 10px', letterSpacing: '0.08em' }}>
+            ⚡ DEMO MODE — SWITCH ROLE
+          </p>
+          {DEMO_PERSONAS.map(p => {
+            const isActive = p.id === currentPersona.id
+            return (
+              <button
+                key={p.id}
+                onClick={() => { onSwitch(p); setOpen(false) }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', padding: '7px 10px', borderRadius: 8,
+                  background: isActive ? `${ROLE_COLORS[p.role]}18` : 'transparent',
+                  border: isActive ? `1px solid ${ROLE_COLORS[p.role]}55` : '1px solid transparent',
+                  cursor: 'pointer', marginBottom: 4,
+                  transition: 'all 0.15s',
+                }}
+              >
+                <span style={{ fontSize: 14 }}>{p.emoji}</span>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontFamily: 'var(--font-display, sans-serif)', fontSize: 12,
+                                fontWeight: 600, color: isActive ? ROLE_COLORS[p.role] : '#C9D1D9' }}>
+                    {p.label}
+                  </div>
+                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
+                                color: '#484F58' }}>
+                    {p.full_name}
+                  </div>
+                </div>
+                {isActive && <span style={{ marginLeft: 'auto', fontSize: 10,
+                                            color: ROLE_COLORS[p.role] }}>●</span>}
+              </button>
+            )
+          })}
+          <p style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 9,
+                      color: '#484F58', margin: '8px 0 0', borderTop: '1px solid #21262D',
+                      paddingTop: 8 }}>
+            RBAC demo — sidebar changes per role
+          </p>
+        </div>
+      )}
+
+      {/* Floating trigger button */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Switch demo role"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 7,
+          padding: '8px 14px', borderRadius: 999,
+          background: open ? 'rgba(0,212,170,0.15)' : 'rgba(13,17,23,0.95)',
+          border: `1.5px solid ${open ? '#00D4AA' : 'rgba(0,212,170,0.35)'}`,
+          color: '#00D4AA', cursor: 'pointer',
+          fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+          fontWeight: 600, backdropFilter: 'blur(12px)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.5)',
+          transition: 'all 0.2s',
+        }}
+      >
+        <span style={{ fontSize: 14 }}>{currentPersona.emoji}</span>
+        <span>{currentPersona.label}</span>
+        <span style={{ opacity: 0.6, fontSize: 9 }}>{open ? '▲' : '▼'}</span>
+      </button>
+    </div>
+  )
 }
 
 // ── Inner app — only mounts after loader is gone ──────────────────────────────
@@ -198,12 +352,13 @@ function InnerApp({ guestUser = null }) {
 
 // ── Root App — manages loader + decides live vs mock mode ─────────────────────
 export default function App() {
-  const [showLoader, setShowLoader] = useState(true)
-  const [useMockData, setUseMockData] = useState(false)
+  const [showLoader, setShowLoader]     = useState(true)
+  const [useMockData, setUseMockData]   = useState(false)
+  // Active demo persona — starts as Logistics Manager, user can switch
+  const [activePersona, setActivePersona] = useState(DEMO_PERSONAS[1])
   const loaderDismissed = useRef(false)
 
   // ── NUCLEAR FALLBACK: after 25s force-open dashboard with mock data ─────────
-  // This runs even if FullScreenLoader callbacks never fire (safety net)
   useEffect(() => {
     const nuclear = setTimeout(() => {
       if (!loaderDismissed.current) {
@@ -237,20 +392,25 @@ export default function App() {
     )
   }
 
-  // ── MOCK MODE: backend is asleep — run 100% offline with demo data ──────────
-  // We skip AuthProvider entirely to avoid Supabase hanging the app.
-  // We inject GUEST_DEMO_USER so InnerApp always has a user to render.
+  // ── MOCK MODE: backend is asleep — 100% offline with all 6 demo personas ────
+  // AuthProvider & InnerApp both receive the active persona directly.
+  // DemoRoleSwitcher floats over the UI and swaps persona instantly.
   if (useMockData) {
     return (
-      <AuthProvider guestUser={GUEST_DEMO_USER}>
+      // Key forces full remount when role changes — sidebar, views all reset
+      <AuthProvider key={activePersona.id} guestUser={activePersona}>
         <AppProvider useMockData={true}>
-          <InnerApp guestUser={GUEST_DEMO_USER} />
+          <InnerApp guestUser={activePersona} />
+          <DemoRoleSwitcher
+            currentPersona={activePersona}
+            onSwitch={setActivePersona}
+          />
         </AppProvider>
       </AuthProvider>
     )
   }
 
-  // ── LIVE MODE: backend is up — use real auth + real data ───────────────────
+  // ── LIVE MODE: backend is up — use real Supabase auth + real data ──────────
   return (
     <AuthProvider>
       <AppProvider useMockData={false}>
